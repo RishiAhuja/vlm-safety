@@ -18,6 +18,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from types import MethodType
 
 import torch
 from PIL import Image
@@ -79,6 +80,13 @@ def load_image(path: Path) -> Image.Image:
     return Image.open(path).convert("RGB")
 
 
+def install_transformers_compat_shims() -> None:
+    from transformers.modeling_utils import PreTrainedModel
+
+    if not hasattr(PreTrainedModel, "all_tied_weights_keys"):
+        PreTrainedModel.all_tied_weights_keys = {}
+
+
 def run_phi(model_id: str, image_path: Path, cache_dir: str) -> str:
     log("PHASE phi loading_model")
     model = AutoModelForCausalLM.from_pretrained(
@@ -121,6 +129,7 @@ def run_phi(model_id: str, image_path: Path, cache_dir: str) -> str:
 
 
 def run_molmo(model_id: str, image_path: Path, cache_dir: str) -> str:
+    install_transformers_compat_shims()
     log("PHASE molmo loading_processor")
     processor = AutoProcessor.from_pretrained(
         model_id,
@@ -247,6 +256,20 @@ def run_cogvlm2(model_id: str, image_path: Path, cache_dir: str) -> str:
         trust_remote_code=True,
         cache_dir=cache_dir,
     ).to("cuda").eval()
+    if not hasattr(model, "_extract_past_from_model_output"):
+        def _extract_past_from_model_output(self, outputs, standardize_cache_format=False):
+            if hasattr(outputs, "past_key_values"):
+                return "past_key_values", outputs.past_key_values
+            if isinstance(outputs, dict):
+                for cache_name in ("past_key_values", "mems", "past_buckets_states"):
+                    if cache_name in outputs:
+                        return cache_name, outputs[cache_name]
+            return "past_key_values", None
+
+        model._extract_past_from_model_output = MethodType(
+            _extract_past_from_model_output,
+            model,
+        )
     image = load_image(image_path)
     input_by_model = model.build_conversation_input_ids(
         tokenizer,
