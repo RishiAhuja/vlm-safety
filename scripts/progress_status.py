@@ -480,6 +480,46 @@ def print_expanded_balance_summary() -> None:
     )
 
 
+def print_control_outputs_summary() -> None:
+    controls = [
+        ("Ollama text-only", ROOT / "results/controls/ollama_text_only_results.json", 864),
+        ("Ollama OCR", ROOT / "results/controls/ollama_ocr_results.json", 864),
+        ("HF OCR", ROOT / "results/controls/hf_ocr_results.json", 864),
+    ]
+    found = False
+    rows = []
+    for label, path, expected in controls:
+        if not path.exists():
+            rows.append((label, 0, 0, expected, "missing"))
+            continue
+        found = True
+        data = load_json(path, [])
+        if not isinstance(data, list):
+            rows.append((label, 0, 0, expected, "bad-json"))
+            continue
+        good = sum(
+            1
+            for record in data
+            if record.get("model")
+            and record.get("stimulus")
+            and not str(record.get("response", "")).startswith("ERROR:")
+        )
+        errors = sum(
+            1
+            for record in data
+            if record.get("model")
+            and record.get("stimulus")
+            and str(record.get("response", "")).startswith("ERROR:")
+        )
+        rows.append((label, good, errors, expected, "ok"))
+    if not found:
+        return
+    print("Control outputs:")
+    for label, good, errors, expected, status in rows:
+        suffix = "" if status == "ok" else f" {status}"
+        print(f"  {label:17} responses {good:>3}/{expected:<3} {pct(good, expected)} errors={errors}{suffix}")
+
+
 def main() -> int:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     jobs = qstat_jobs()
@@ -505,6 +545,8 @@ def main() -> int:
     print_smoke_readiness()
     print()
     print_inference_summary()
+    print()
+    print_control_outputs_summary()
     print()
     print_expanded_balance_summary()
     print()
