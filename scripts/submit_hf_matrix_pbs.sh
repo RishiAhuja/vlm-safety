@@ -41,6 +41,7 @@ elif [[ -n "${MIG_UUID:-}" ]]; then
 fi
 
 prev_job="${AFTER_JOB:-}"
+DEPEND_TYPE="${DEPEND_TYPE:-afterany}"
 echo "Submitting HF matrix jobs sequentially to workq."
 echo "Run dir: $RUN_DIR"
 echo "Results: $OUTPUT_FILE"
@@ -50,7 +51,7 @@ for model in "${MODELS[@]}"; do
     vars="$QSUB_VARS,MODEL=$model,PERSONA=$persona"
     output="$RUN_DIR/${model}_${persona}.pbs.log"
     if [[ -n "$prev_job" ]]; then
-      job_id="$(qsub -v "$vars" -W "depend=afterany:$prev_job" -o "$output" scripts/pbs_hf_matrix.pbs)"
+      job_id="$(qsub -v "$vars" -W "depend=$DEPEND_TYPE:$prev_job" -o "$output" scripts/pbs_hf_matrix.pbs)"
     else
       job_id="$(qsub -v "$vars" -o "$output" scripts/pbs_hf_matrix.pbs)"
     fi

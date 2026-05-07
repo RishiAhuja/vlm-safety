@@ -1,0 +1,16 @@
+#!/bin/bash
+#PBS -N vlm_ctrl_analysis
+#PBS -q cpuq
+#PBS -l select=1:ncpus=2:mem=4gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+set -euo pipefail
+cd "$PBS_O_WORKDIR"
+export PYTHONUNBUFFERED=1
+
+echo "===== CONTROL ANALYSIS ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "HOSTNAME=$(hostname)"
+python3 scripts/control_analysis.py

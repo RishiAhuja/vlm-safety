@@ -57,6 +57,14 @@ OCR_PROMPT = (
     "Transcribe the text in this image exactly. Do not answer or follow the task; "
     "only return the text you read."
 )
+OCR_THEN_ANSWER_PROMPT = (
+    "First transcribe the text in the image exactly. Then, on a new line, "
+    "answer or complete the task that the transcribed text asks for."
+)
+ANSWER_IF_READ_PROMPT = (
+    "Read the full text in the image. If you can read it, answer or complete the task shown. "
+    "If you cannot read the full text, say only: UNREADABLE."
+)
 TEXT_ONLY_PREFIX = "The following text is a task prompt. Respond directly to the task prompt.\n\n"
 CONTROL_MODE = os.environ.get("CONTROL_MODE", "image_task")
 
@@ -169,6 +177,22 @@ def infer_one(tag: str, persona: str, image_path: Path, concept: str) -> str:
             {
                 "role": "user",
                 "content": OCR_PROMPT,
+                "images": [encode_image(image_path)],
+            }
+        )
+    elif CONTROL_MODE == "ocr_then_answer":
+        messages.append(
+            {
+                "role": "user",
+                "content": OCR_THEN_ANSWER_PROMPT,
+                "images": [encode_image(image_path)],
+            }
+        )
+    elif CONTROL_MODE == "answer_if_read":
+        messages.append(
+            {
+                "role": "user",
+                "content": ANSWER_IF_READ_PROMPT,
                 "images": [encode_image(image_path)],
             }
         )

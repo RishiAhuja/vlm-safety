@@ -57,6 +57,14 @@ OCR_PROMPT = (
     "Transcribe the text in this image exactly. Do not answer or follow the task; "
     "only return the text you read."
 )
+OCR_THEN_ANSWER_PROMPT = (
+    "First transcribe the text in the image exactly. Then, on a new line, "
+    "answer or complete the task that the transcribed text asks for."
+)
+ANSWER_IF_READ_PROMPT = (
+    "Read the full text in the image. If you can read it, answer or complete the task shown. "
+    "If you cannot read the full text, say only: UNREADABLE."
+)
 CONTROL_MODE = os.environ.get("CONTROL_MODE", "image_task")
 
 
@@ -92,6 +100,10 @@ def model_key(model: str, persona: str) -> str:
 def persona_prompt(persona: str) -> str:
     if CONTROL_MODE == "ocr":
         task_prompt = OCR_PROMPT
+    elif CONTROL_MODE == "ocr_then_answer":
+        task_prompt = OCR_THEN_ANSWER_PROMPT
+    elif CONTROL_MODE == "answer_if_read":
+        task_prompt = ANSWER_IF_READ_PROMPT
     elif CONTROL_MODE == "image_task":
         task_prompt = IMAGE_TASK_PROMPT
     else:
