@@ -18,8 +18,18 @@ echo "===== PBS jobs ====="
 qstat -u "$USER" || true
 echo
 
-echo "===== login-node compute guard ====="
-pgrep -u "$USER" -af "model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained" || echo "No matching login-node compute processes."
+echo "===== scheduler/process check ====="
+matching_processes="$(pgrep -u "$USER" -af "model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained" || true)"
+running_pbs_jobs="$(qstat -u "$USER" 2>/dev/null | awk '$6 == "R" || $10 == "R" {print}' || true)"
+if [[ -z "$matching_processes" ]]; then
+  echo "No matching model processes on this host."
+elif [[ -n "$running_pbs_jobs" ]]; then
+  echo "Matching model process is present while PBS reports a running job; expected for scheduler-owned execution."
+  echo "$matching_processes"
+else
+  echo "WARNING: matching model process exists but no running PBS job was found:"
+  echo "$matching_processes"
+fi
 echo
 
 if [[ -z "${RUN_DIR:-}" || ! -d "$RUN_DIR" ]]; then
@@ -36,6 +46,10 @@ if [[ -f "$RUN_DIR/submitted_jobs.tsv" ]]; then
   cat "$RUN_DIR/submitted_jobs.tsv"
   echo
 fi
+
+echo "===== ETA ====="
+/Data3/it_FA0571/hf_vlm_env/bin/python scripts/model_smoke_eta.py "$RUN_DIR" || true
+echo
 
 echo "===== PBS logs ====="
 for f in "$RUN_DIR"/*.pbs.log; do

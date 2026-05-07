@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="${ROOT:-/Data3/it_FA0571/vlm}"
+INTERVAL="${1:-30}"
+cd "$ROOT"
+
+while true; do
+  clear || true
+  scripts/model_smoke_status.sh
+  echo
+  /Data3/it_FA0571/hf_vlm_env/bin/python scripts/model_smoke_eta.py || true
+  echo
+  echo "Refreshing every ${INTERVAL}s. Press Ctrl-C to stop watching; PBS jobs keep running."
+  sleep "$INTERVAL"
+done
