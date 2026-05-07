@@ -1,0 +1,58 @@
+#!/bin/bash
+#PBS -N vlm_env_setup
+#PBS -q cpuq
+#PBS -l select=1:ncpus=4
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+echo "===== PBS ENV SETUP ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "PBS_QUEUE=${PBS_QUEUE:-}"
+echo "HOSTNAME=$(hostname)"
+echo
+
+if [[ -n "${CUDA_VISIBLE_DEVICES:-}" ]]; then
+  echo "ERROR: CPU setup job unexpectedly has CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+  exit 2
+fi
+
+export PYTHONNOUSERSITE=1
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+
+echo "===== DeepSeek: xformers ====="
+/Data3/it_FA0571/hf_vlm_deepseek_env/bin/python -m pip install --no-deps xformers==0.0.35
+/Data3/it_FA0571/hf_vlm_deepseek_env/bin/python - <<'INNER'
+import xformers
+print("deepseek xformers", xformers.__version__, xformers.__file__)
+INNER
+
+echo "===== Molmo: Transformers 4.x compatibility ====="
+/Data3/it_FA0571/hf_vlm_molmo_env/bin/python -m pip install \
+  "transformers==4.46.3" \
+  "tokenizers>=0.20,<0.21"
+/Data3/it_FA0571/hf_vlm_molmo_env/bin/python - <<'INNER'
+import tokenizers
+import transformers
+print("molmo transformers", transformers.__version__, transformers.__file__)
+print("molmo tokenizers", tokenizers.__version__, tokenizers.__file__)
+INNER
+
+echo "===== CogVLM2: Transformers 4.41 compatibility ====="
+/Data3/it_FA0571/hf_vlm_cog_env/bin/python -m pip install \
+  "transformers==4.41.2" \
+  "tokenizers>=0.19,<0.20"
+/Data3/it_FA0571/hf_vlm_cog_env/bin/python - <<'INNER'
+import tokenizers
+import transformers
+import xformers
+print("cog transformers", transformers.__version__, transformers.__file__)
+print("cog tokenizers", tokenizers.__version__, tokenizers.__file__)
+print("cog xformers", xformers.__version__, xformers.__file__)
+INNER
+
+echo "Environment setup complete."

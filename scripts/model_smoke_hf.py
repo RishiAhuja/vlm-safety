@@ -291,7 +291,6 @@ def run_cogvlm2(model_id: str, image_path: Path, cache_dir: str) -> str:
             max_new_tokens=96,
             pad_token_id=128002,
             do_sample=False,
-            use_cache=False,
         )
     output = output[:, inputs["input_ids"].shape[1] :]
     return tokenizer.decode(output[0]).split("<|end_of_text|>")[0]
