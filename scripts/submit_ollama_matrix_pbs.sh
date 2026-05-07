@@ -48,8 +48,13 @@ TAGS[minicpm_v]="minicpm-v"
 ORIGINS[minicpm_v]="Eastern"
 
 QSUB_VARS="RUN_DIR=$RUN_DIR,OUTPUT_FILE=$OUTPUT_FILE,LIMIT=${LIMIT:-0},OLLAMA_MODELS=${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
-if [[ -n "${MIG_UUID:-}" ]]; then
+if [[ -n "${GPU_SELECTOR:-}" ]]; then
+  QSUB_VARS="$QSUB_VARS,GPU_SELECTOR=$GPU_SELECTOR"
+elif [[ -n "${MIG_UUID:-}" ]]; then
   QSUB_VARS="$QSUB_VARS,MIG_UUID=$MIG_UUID"
+fi
+if [[ -n "${OLLAMA_NUM_CTX:-}" ]]; then
+  QSUB_VARS="$QSUB_VARS,OLLAMA_NUM_CTX=$OLLAMA_NUM_CTX"
 fi
 
 prev_job="${AFTER_JOB:-}"
