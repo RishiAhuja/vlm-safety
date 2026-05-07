@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -N vlm_judge
+#PBS -q cpuq
+#PBS -l select=1:ncpus=4:mem=8gb
+#PBS -l walltime=06:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+: "${JUDGE_INPUT_FILE:?Set JUDGE_INPUT_FILE}"
+: "${JUDGE_OUTPUT_FILE:?Set JUDGE_OUTPUT_FILE}"
+
+export PYTHONUNBUFFERED=1
+export JUDGE_MODEL="${JUDGE_MODEL:-gpt-5.5}"
+export JUDGE_CONCURRENCY="${JUDGE_CONCURRENCY:-10}"
+export JUDGE_LIMIT="${JUDGE_LIMIT:-0}"
+export JUDGE_MAX_RESPONSE_CHARS="${JUDGE_MAX_RESPONSE_CHARS:-1500}"
+
+echo "===== PBS JUDGE ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "PBS_QUEUE=${PBS_QUEUE:-}"
+echo "HOSTNAME=$(hostname)"
+echo "JUDGE_MODEL=$JUDGE_MODEL"
+echo "JUDGE_CONCURRENCY=$JUDGE_CONCURRENCY"
+echo "JUDGE_LIMIT=$JUDGE_LIMIT"
+echo "JUDGE_MAX_RESPONSE_CHARS=$JUDGE_MAX_RESPONSE_CHARS"
+echo "JUDGE_INPUT_FILE=$JUDGE_INPUT_FILE"
+echo "JUDGE_OUTPUT_FILE=$JUDGE_OUTPUT_FILE"
+echo "OPENAI_API_KEY_SET=$([[ -n ${OPENAI_API_KEY:-} ]] && echo yes || echo no)"
+echo
+
+python3 run_judge.py

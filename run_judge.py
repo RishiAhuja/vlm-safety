@@ -1,6 +1,6 @@
 """
-LLM-as-Judge scoring of VLM responses using OpenAI gpt-5.4-mini.
-Reads inference_results.json, scores each response, writes inference_results_scored.json.
+LLM-as-Judge scoring of VLM responses using an OpenAI judge model.
+Reads inference results, scores each response, and writes a resumable scored file.
 Uses async concurrency for fast parallel judging.
 """
 import asyncio
@@ -12,7 +12,9 @@ import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from config import JUDGE_CONCURRENCY, JUDGE_MODEL, JUDGE_PROMPT_TEMPLATE, RESULTS_DIR
+from config import JUDGE_CONCURRENCY as DEFAULT_JUDGE_CONCURRENCY
+from config import JUDGE_MODEL as DEFAULT_JUDGE_MODEL
+from config import JUDGE_PROMPT_TEMPLATE, RESULTS_DIR
 
 load_dotenv()
 
@@ -24,6 +26,10 @@ OUTPUT_FILE = os.environ.get(
     "JUDGE_OUTPUT_FILE",
     os.path.join(RESULTS_DIR, "inference_results_scored.json"),
 )
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", DEFAULT_JUDGE_MODEL)
+JUDGE_CONCURRENCY = int(os.environ.get("JUDGE_CONCURRENCY", str(DEFAULT_JUDGE_CONCURRENCY)))
+JUDGE_LIMIT = int(os.environ.get("JUDGE_LIMIT", "0"))
+JUDGE_MAX_RESPONSE_CHARS = int(os.environ.get("JUDGE_MAX_RESPONSE_CHARS", "1500"))
 
 
 def _parse_judgment(raw: str) -> dict:
@@ -72,12 +78,13 @@ async def score_one(
         record["score"] = -1
         record["failure_mode"] = "inference_error"
         record["judge_reason"] = "Inference error"
+        record["judge_model"] = JUDGE_MODEL
         print(f"  [{idx}/{total}] {label} — skipped (inference error)")
         return
 
     prompt = JUDGE_PROMPT_TEMPLATE.format(
         concept=record["concept"],
-        response=record["response"][:1500],
+        response=record["response"][:JUDGE_MAX_RESPONSE_CHARS],
     )
 
     t0 = time.time()
@@ -85,13 +92,13 @@ async def score_one(
         resp = await client.chat.completions.create(
             model=JUDGE_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.0,
         )
         raw = resp.choices[0].message.content or ""
     except Exception as e:
         record["score"] = -1
         record["failure_mode"] = "api_error"
         record["judge_reason"] = f"API error: {e}"
+        record["judge_model"] = JUDGE_MODEL
         print(f"  [{idx}/{total}] {label} — API error: {e}")
         return
 
@@ -101,6 +108,7 @@ async def score_one(
     record["score"] = judgment["score"]
     record["failure_mode"] = judgment.get("failure_mode", "unknown")
     record["judge_reason"] = judgment["reason"]
+    record["judge_model"] = JUDGE_MODEL
 
     print(f"  [{idx}/{total}] {label} — score={judgment['score']} ({elapsed:.1f}s) — {judgment['reason'][:80]}")
 
@@ -133,7 +141,11 @@ async def _run_judge_async() -> list[dict]:
                 existing = json.load(f)
                 for r in existing:
                     key = (r["stimulus"], r["model"])
-                    if r.get("score") is not None and r["score"] != -1:
+                    if (
+                        r.get("score") is not None
+                        and r["score"] != -1
+                        and r.get("judge_model", JUDGE_MODEL) == JUDGE_MODEL
+                    ):
                         scored_lookup[key] = r
             print(f"Loaded {len(scored_lookup)} already-scored entries from {OUTPUT_FILE}")
         except (json.JSONDecodeError, IOError) as e:
@@ -149,9 +161,13 @@ async def _run_judge_async() -> list[dict]:
             r["score"] = scored_lookup[key]["score"]
             r["failure_mode"] = scored_lookup[key].get("failure_mode", "unknown")
             r["judge_reason"] = scored_lookup[key].get("judge_reason", "")
+            r["judge_model"] = scored_lookup[key].get("judge_model", JUDGE_MODEL)
             print(f"  [{i}/{total}] {r['stimulus']} × {r['model']} — already scored ({r['score']})")
         else:
             pending.append((i, r))
+
+    if JUDGE_LIMIT > 0:
+        pending = pending[:JUDGE_LIMIT]
 
     if not pending:
         print("\nAll responses already scored.")
