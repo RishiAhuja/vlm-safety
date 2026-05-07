@@ -1,0 +1,223 @@
+{
+  "generated_at_ist": "2026-05-08T00:58:46+05:30",
+  "judge_model": "gpt-5.5",
+  "datasets": [
+    {
+      "dataset": "expanded",
+      "path": "results/expanded/inference_results_scored_gpt55.json",
+      "rows": 1728,
+      "judge_model_rows": 1728,
+      "api_error_rows": 0,
+      "parse_error_rows": 0,
+      "inference_error_rows": 2,
+      "score_0": 948,
+      "score_1": 484,
+      "score_2": 294,
+      "score_minus_1": 2,
+      "asr_score2": 0.1701
+    },
+    {
+      "dataset": "pilot",
+      "path": "results/inference_results_scored_gpt55.json",
+      "rows": 432,
+      "judge_model_rows": 432,
+      "api_error_rows": 0,
+      "parse_error_rows": 0,
+      "inference_error_rows": 0,
+      "score_0": 168,
+      "score_1": 105,
+      "score_2": 159,
+      "score_minus_1": 0,
+      "asr_score2": 0.3681
+    },
+    {
+      "dataset": "run_01",
+      "path": "results/replicates/run_01/inference_results_scored_gpt55.json",
+      "rows": 432,
+      "judge_model_rows": 432,
+      "api_error_rows": 0,
+      "parse_error_rows": 0,
+      "inference_error_rows": 2,
+      "score_0": 155,
+      "score_1": 113,
+      "score_2": 162,
+      "score_minus_1": 2,
+      "asr_score2": 0.375
+    },
+    {
+      "dataset": "run_02",
+      "path": "results/replicates/run_02/inference_results_scored_gpt55.json",
+      "rows": 432,
+      "judge_model_rows": 432,
+      "api_error_rows": 0,
+      "parse_error_rows": 0,
+      "inference_error_rows": 4,
+      "score_0": 158,
+      "score_1": 120,
+      "score_2": 150,
+      "score_minus_1": 4,
+      "asr_score2": 0.3472
+    },
+    {
+      "dataset": "run_03",
+      "path": "results/replicates/run_03/inference_results_scored_gpt55.json",
+      "rows": 432,
+      "judge_model_rows": 432,
+      "api_error_rows": 0,
+      "parse_error_rows": 0,
+      "inference_error_rows": 4,
+      "score_0": 154,
+      "score_1": 121,
+      "score_2": 153,
+      "score_minus_1": 4,
+      "asr_score2": 0.3542
+    }
+  ],
+  "failure_modes": [
+    {
+      "dataset": "expanded",
+      "failure_mode": "full_engagement",
+      "rows": 294
+    },
+    {
+      "dataset": "expanded",
+      "failure_mode": "generic_caption_only",
+      "rows": 468
+    },
+    {
+      "dataset": "expanded",
+      "failure_mode": "inference_error",
+      "rows": 2
+    },
+    {
+      "dataset": "expanded",
+      "failure_mode": "ocr_failure",
+      "rows": 198
+    },
+    {
+      "dataset": "expanded",
+      "failure_mode": "partial_hedged",
+      "rows": 484
+    },
+    {
+      "dataset": "expanded",
+      "failure_mode": "safety_refusal",
+      "rows": 282
+    },
+    {
+      "dataset": "pilot",
+      "failure_mode": "full_engagement",
+      "rows": 159
+    },
+    {
+      "dataset": "pilot",
+      "failure_mode": "generic_caption_only",
+      "rows": 128
+    },
+    {
+      "dataset": "pilot",
+      "failure_mode": "ocr_failure",
+      "rows": 27
+    },
+    {
+      "dataset": "pilot",
+      "failure_mode": "partial_hedged",
+      "rows": 105
+    },
+    {
+      "dataset": "pilot",
+      "failure_mode": "safety_refusal",
+      "rows": 13
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "full_engagement",
+      "rows": 162
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "generic_caption_only",
+      "rows": 118
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "inference_error",
+      "rows": 2
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "ocr_failure",
+      "rows": 17
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "partial_hedged",
+      "rows": 113
+    },
+    {
+      "dataset": "run_01",
+      "failure_mode": "safety_refusal",
+      "rows": 20
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "full_engagement",
+      "rows": 150
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "generic_caption_only",
+      "rows": 127
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "inference_error",
+      "rows": 4
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "ocr_failure",
+      "rows": 17
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "partial_hedged",
+      "rows": 120
+    },
+    {
+      "dataset": "run_02",
+      "failure_mode": "safety_refusal",
+      "rows": 14
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "full_engagement",
+      "rows": 153
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "generic_caption_only",
+      "rows": 119
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "inference_error",
+      "rows": 4
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "ocr_failure",
+      "rows": 17
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "partial_hedged",
+      "rows": 121
+    },
+    {
+      "dataset": "run_03",
+      "failure_mode": "safety_refusal",
+      "rows": 18
+    }
+  ]
+}
