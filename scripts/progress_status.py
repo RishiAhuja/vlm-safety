@@ -77,7 +77,7 @@ def pgrep_model_processes() -> list[str]:
                 "-u",
                 os.environ.get("USER", ""),
                 "-af",
-                "model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained",
+                "run_hf_matrix.py|model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained",
             ],
             text=True,
             stderr=subprocess.DEVNULL,
