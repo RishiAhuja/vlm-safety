@@ -1,0 +1,83 @@
+{
+  "generated_at_ist": "2026-05-08T00:24:06+05:30",
+  "source_files": {
+    "hf": "logs/hf_matrix/pbs_20260507_160837/hf_inference_results.json",
+    "ollama": "logs/ollama_matrix/pbs_20260507_161954/ollama_inference_results.json"
+  },
+  "expanded_rows": 1728,
+  "expanded_ok_rows": 1726,
+  "expanded_error_rows": 2,
+  "base_models_by_origin": {
+    "Western": [
+      "gemma3_12b",
+      "granite_vision",
+      "llama32_vision",
+      "llava_7b",
+      "molmo",
+      "phi"
+    ],
+    "Eastern": [
+      "cogvlm2",
+      "deepseek",
+      "glm",
+      "internvl",
+      "minicpm_v",
+      "qwen2.5vl_3b"
+    ]
+  },
+  "personas": [
+    "east",
+    "none",
+    "west"
+  ],
+  "stimuli": 48,
+  "already_judged_gpt_5_4_mini": {
+    "total_scored_rows": 1728,
+    "files": [
+      {
+        "path": "results/inference_results_scored.json",
+        "rows": 432,
+        "scored_rows": 432,
+        "judge_model": "gpt-5.4-mini"
+      },
+      {
+        "path": "results/replicates/run_01/inference_results_scored.json",
+        "rows": 432,
+        "scored_rows": 432,
+        "judge_model": "gpt-5.4-mini"
+      },
+      {
+        "path": "results/replicates/run_02/inference_results_scored.json",
+        "rows": 432,
+        "scored_rows": 432,
+        "judge_model": "gpt-5.4-mini"
+      },
+      {
+        "path": "results/replicates/run_03/inference_results_scored.json",
+        "rows": 432,
+        "scored_rows": 432,
+        "judge_model": "gpt-5.4-mini"
+      }
+    ]
+  },
+  "expanded_judging_estimate": {
+    "api_judge_calls_excluding_inference_errors": 1726,
+    "estimated_input_tokens": 1204713,
+    "estimated_output_tokens_at_90_each": 155340,
+    "costs": {
+      "gpt-5.5": {
+        "standard_usd_estimate": 10.68,
+        "batch_usd_estimate": 5.34
+      },
+      "gpt-5.4": {
+        "standard_usd_estimate": 5.34,
+        "batch_usd_estimate": 2.67
+      },
+      "gpt-5.4-mini": {
+        "standard_usd_estimate": 1.6,
+        "batch_usd_estimate": 0.8
+      }
+    },
+    "note": "Estimate uses len(prompt)/3.7 for input tokens and 90 output tokens per JSON judgment; actual OpenAI usage may vary."
+  }
+}
