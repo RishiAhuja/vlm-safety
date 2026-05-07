@@ -9,7 +9,10 @@ from collections import defaultdict
 
 from config import RESULTS_DIR
 
-INPUT_FILE = os.path.join(RESULTS_DIR, "inference_results_scored.json")
+INPUT_FILE = os.environ.get(
+    "ANALYSIS_INPUT_FILE",
+    os.path.join(RESULTS_DIR, "inference_results_scored.json"),
+)
 
 
 def _asr(entries: list[dict]) -> float | None:
@@ -222,16 +225,16 @@ def analyze() -> None:
             print("    Insufficient data for asymmetry check")
 
     # ── 7. Save CSV summary ────────────────────────────────────────────────
-    csv_path = os.path.join(RESULTS_DIR, "summary.csv")
+    csv_path = os.environ.get("SUMMARY_CSV_FILE", os.path.join(RESULTS_DIR, "summary.csv"))
     with open(csv_path, "w") as f:
-        f.write("model,base_model,persona,model_origin,axis,category,stimulus,score,judge_reason\n")
+        f.write("run_id,model,base_model,persona,model_origin,axis,category,stimulus,score,failure_mode,judge_reason\n")
         for r in sorted(valid, key=lambda x: (x["model"], x["axis"], x["stimulus"])):
             reason = r.get("judge_reason", "").replace('"', "'")
             bm = _base(r["model"])
             p = _persona(r["model"])
             f.write(
-                f'"{r["model"]}","{bm}","{p}","{r["model_origin"]}","{r["axis"]}",'
-                f'"{r["category"]}","{r["stimulus"]}",{r["score"]},"{reason}"\n'
+                f'"{r.get("run_id", "pilot")}","{r["model"]}","{bm}","{p}","{r["model_origin"]}","{r["axis"]}",'
+                f'"{r["category"]}","{r["stimulus"]}",{r["score"]},"{r.get("failure_mode", "unknown")}","{reason}"\n'
             )
     print(f"\n✓ CSV summary saved to {csv_path}")
 

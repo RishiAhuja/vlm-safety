@@ -30,7 +30,11 @@ from config import (
     VLM_MODELS,
 )
 
-RESULTS_FILE = os.path.join(RESULTS_DIR, "inference_results.json")
+RESULTS_FILE = os.environ.get(
+    "INFERENCE_RESULTS_FILE",
+    os.path.join(RESULTS_DIR, "inference_results.json"),
+)
+RUN_ID = os.environ.get("RUN_ID", "pilot")
 
 
 def _encode_image(path: str) -> str:
@@ -140,6 +144,7 @@ async def _infer_one(
         if content is None:
             print(f"ERROR ({elapsed:.0f}s): {last_exc}")
             entry = {
+                "run_id": RUN_ID,
                 "stimulus": filename,
                 "category": category,
                 "axis": axis,
@@ -166,6 +171,7 @@ async def _infer_one(
             return
 
         entry = {
+            "run_id": RUN_ID,
             "stimulus": filename,
             "category": category,
             "axis": axis,

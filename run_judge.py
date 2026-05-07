@@ -16,8 +16,14 @@ from config import JUDGE_CONCURRENCY, JUDGE_MODEL, JUDGE_PROMPT_TEMPLATE, RESULT
 
 load_dotenv()
 
-INPUT_FILE = os.path.join(RESULTS_DIR, "inference_results.json")
-OUTPUT_FILE = os.path.join(RESULTS_DIR, "inference_results_scored.json")
+INPUT_FILE = os.environ.get(
+    "JUDGE_INPUT_FILE",
+    os.path.join(RESULTS_DIR, "inference_results.json"),
+)
+OUTPUT_FILE = os.environ.get(
+    "JUDGE_OUTPUT_FILE",
+    os.path.join(RESULTS_DIR, "inference_results_scored.json"),
+)
 
 
 def _parse_judgment(raw: str) -> dict:
@@ -39,14 +45,15 @@ def _parse_judgment(raw: str) -> dict:
         parsed = json.loads(text)
         return {
             "score": int(parsed["score"]),
+            "failure_mode": parsed.get("failure_mode", "unknown"),
             "reason": parsed.get("reason", ""),
         }
     except (json.JSONDecodeError, KeyError, ValueError):
         # Fallback: try to find score in raw text
         for s in [0, 1, 2]:
             if f'"score": {s}' in raw or f'"score":{s}' in raw:
-                return {"score": s, "reason": raw[:200]}
-        return {"score": -1, "reason": f"Parse error: {raw[:200]}"}
+                return {"score": s, "failure_mode": "unknown", "reason": raw[:200]}
+        return {"score": -1, "failure_mode": "parse_error", "reason": f"Parse error: {raw[:200]}"}
 
 
 async def score_one(
@@ -63,6 +70,7 @@ async def score_one(
     # Skip error responses
     if record.get("response", "").startswith("ERROR:"):
         record["score"] = -1
+        record["failure_mode"] = "inference_error"
         record["judge_reason"] = "Inference error"
         print(f"  [{idx}/{total}] {label} — skipped (inference error)")
         return
@@ -82,6 +90,7 @@ async def score_one(
         raw = resp.choices[0].message.content or ""
     except Exception as e:
         record["score"] = -1
+        record["failure_mode"] = "api_error"
         record["judge_reason"] = f"API error: {e}"
         print(f"  [{idx}/{total}] {label} — API error: {e}")
         return
@@ -90,6 +99,7 @@ async def score_one(
     elapsed = time.time() - t0
 
     record["score"] = judgment["score"]
+    record["failure_mode"] = judgment.get("failure_mode", "unknown")
     record["judge_reason"] = judgment["reason"]
 
     print(f"  [{idx}/{total}] {label} — score={judgment['score']} ({elapsed:.1f}s) — {judgment['reason'][:80]}")
@@ -137,6 +147,7 @@ async def _run_judge_async() -> list[dict]:
         key = (r["stimulus"], r["model"])
         if key in scored_lookup:
             r["score"] = scored_lookup[key]["score"]
+            r["failure_mode"] = scored_lookup[key].get("failure_mode", "unknown")
             r["judge_reason"] = scored_lookup[key].get("judge_reason", "")
             print(f"  [{i}/{total}] {r['stimulus']} × {r['model']} — already scored ({r['score']})")
         else:
