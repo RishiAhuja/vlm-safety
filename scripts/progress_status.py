@@ -77,7 +77,7 @@ def pgrep_model_processes() -> list[str]:
                 "-u",
                 os.environ.get("USER", ""),
                 "-af",
-                "run_hf_matrix.py|model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained",
+                "run_hf_matrix.py|run_ollama_matrix.py|model_smoke_hf.py|ollama serve|ollama pull|python.*from_pretrained",
             ],
             text=True,
             stderr=subprocess.DEVNULL,
@@ -331,6 +331,155 @@ def print_hf_matrix_summary(jobs: list[dict[str, str]]) -> None:
         )
 
 
+
+def latest_ollama_matrix_run() -> tuple[Path, Path] | None:
+    run_marker = ROOT / "logs/ollama_matrix/latest_run.txt"
+    results_marker = ROOT / "logs/ollama_matrix/latest_results.txt"
+    if not run_marker.exists() or not results_marker.exists():
+        return None
+    run_dir = Path(run_marker.read_text().strip())
+    results_file = Path(results_marker.read_text().strip())
+    if not run_dir.exists():
+        return None
+    return run_dir, results_file
+
+
+def print_ollama_matrix_summary(jobs: list[dict[str, str]]) -> None:
+    latest = latest_ollama_matrix_run()
+    if not latest:
+        print("Ollama expanded matrix: no run submitted yet")
+        return
+
+    run_dir, results_file = latest
+    submitted_path = run_dir / "submitted_jobs.tsv"
+    submitted = []
+    if submitted_path.exists():
+        for line in submitted_path.read_text().splitlines():
+            parts = line.split()
+            if len(parts) >= 5:
+                submitted.append((parts[0], parts[1], parts[2], parts[3], parts[4]))
+
+    results = load_json(results_file, [])
+    if not isinstance(results, list):
+        results = []
+
+    stimuli, _models = expected_matrix()
+    per_job_total = len(stimuli) if stimuli else 48
+    expected_total = len(submitted) * per_job_total
+    done_pairs = {
+        (row.get("model"), row.get("stimulus"))
+        for row in results
+        if row.get("model")
+        and row.get("stimulus")
+        and not str(row.get("response", "")).startswith("ERROR:")
+    }
+    error_pairs = {
+        (row.get("model"), row.get("stimulus"))
+        for row in results
+        if row.get("model")
+        and row.get("stimulus")
+        and str(row.get("response", "")).startswith("ERROR:")
+    }
+
+    origins = {model_key: origin for model_key, _persona, _tag, origin, _job_id in submitted}
+    west_models = sum(1 for origin in origins.values() if origin == "Western")
+    east_models = sum(1 for origin in origins.values() if origin == "Eastern")
+    state_by_job = {job["id"]: job["state"] for job in jobs}
+    state_by_job.update({job["id"].split(".")[0]: job["state"] for job in jobs})
+
+    print(
+        f"Ollama expanded matrix: {len(done_pairs)}/{expected_total} responses "
+        f"({pct(len(done_pairs), expected_total)}) | errors={len(error_pairs)} | "
+        f"base models W={west_models} E={east_models} | {short_path(run_dir)}"
+    )
+    for model_key, persona, tag, origin, job_id in submitted:
+        key_prefix = f"{model_key}_{persona}"
+        done = sum(1 for item in done_pairs if item[0] == key_prefix)
+        errors = sum(1 for item in error_pairs if item[0] == key_prefix)
+        state_key = state_by_job.get(job_id, state_by_job.get(job_id.split(".")[0], "done"))
+        state = STATE_NAMES.get(state_key, state_key)
+        print(
+            f"  {key_prefix:22} responses {done:>3}/{per_job_total:<3} {pct(done, per_job_total)} "
+            f"errors {errors:<3} {origin[0]} {state}"
+        )
+
+
+
+HF_MODEL_ORIGIN = {
+    "phi": "Western",
+    "molmo": "Western",
+    "internvl": "Eastern",
+    "glm": "Eastern",
+    "cogvlm2": "Eastern",
+    "deepseek": "Eastern",
+}
+
+
+def print_expanded_balance_summary() -> None:
+    stimuli, _models = expected_matrix()
+    per_job_total = len(stimuli) if stimuli else 48
+    base_origins: dict[str, str] = {}
+    expected_jobs = 0
+    done_pairs: set[tuple[Any, Any]] = set()
+    error_pairs: set[tuple[Any, Any]] = set()
+
+    hf_latest = latest_hf_matrix_run()
+    if hf_latest:
+        run_dir, results_file = hf_latest
+        submitted_path = run_dir / "submitted_jobs.tsv"
+        if submitted_path.exists():
+            for line in submitted_path.read_text().splitlines():
+                parts = line.split()
+                if len(parts) >= 3:
+                    model, _persona, _job_id = parts[:3]
+                    base_origins[model] = HF_MODEL_ORIGIN.get(model, "Unknown")
+                    expected_jobs += 1
+        results = load_json(results_file, [])
+        if isinstance(results, list):
+            for row in results:
+                key = (row.get("model"), row.get("stimulus"))
+                if not key[0] or not key[1]:
+                    continue
+                if str(row.get("response", "")).startswith("ERROR:"):
+                    error_pairs.add(key)
+                else:
+                    done_pairs.add(key)
+
+    ollama_latest = latest_ollama_matrix_run()
+    if ollama_latest:
+        run_dir, results_file = ollama_latest
+        submitted_path = run_dir / "submitted_jobs.tsv"
+        if submitted_path.exists():
+            for line in submitted_path.read_text().splitlines():
+                parts = line.split()
+                if len(parts) >= 5:
+                    model_key, _persona, _tag, origin, _job_id = parts[:5]
+                    base_origins[model_key] = origin
+                    expected_jobs += 1
+        results = load_json(results_file, [])
+        if isinstance(results, list):
+            for row in results:
+                key = (row.get("model"), row.get("stimulus"))
+                if not key[0] or not key[1]:
+                    continue
+                if str(row.get("response", "")).startswith("ERROR:"):
+                    error_pairs.add(key)
+                else:
+                    done_pairs.add(key)
+
+    if not base_origins:
+        return
+
+    west = sum(1 for origin in base_origins.values() if origin == "Western")
+    east = sum(1 for origin in base_origins.values() if origin == "Eastern")
+    expected_total = expected_jobs * per_job_total
+    print(
+        f"Expanded balanced target: Western base models={west}/6, Eastern base models={east}/6 | "
+        f"responses {len(done_pairs)}/{expected_total} ({pct(len(done_pairs), expected_total)}) | "
+        f"errors={len(error_pairs)}"
+    )
+
+
 def main() -> int:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     jobs = qstat_jobs()
@@ -357,7 +506,11 @@ def main() -> int:
     print()
     print_inference_summary()
     print()
+    print_expanded_balance_summary()
+    print()
     print_hf_matrix_summary(jobs)
+    print()
+    print_ollama_matrix_summary(jobs)
     return 0
 
 

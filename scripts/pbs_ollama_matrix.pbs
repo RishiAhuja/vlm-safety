@@ -1,0 +1,110 @@
+#!/bin/bash
+#PBS -N vlm_ollama_matrix
+#PBS -q workq
+#PBS -l select=1:ncpus=8:ngpus=1
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+MODEL_KEY="${MODEL_KEY:?Set MODEL_KEY with qsub -v MODEL_KEY=<name>}"
+MODEL_TAG="${MODEL_TAG:?Set MODEL_TAG with qsub -v MODEL_TAG=<tag>}"
+ORIGIN="${ORIGIN:?Set ORIGIN with qsub -v ORIGIN=<Western|Eastern>}"
+PERSONA="${PERSONA:?Set PERSONA with qsub -v PERSONA=<none|west|east>}"
+RUN_DIR="${RUN_DIR:-$PBS_O_WORKDIR/logs/ollama_matrix/pbs_${PBS_JOBID}}"
+OUTPUT_FILE="${OUTPUT_FILE:-$RUN_DIR/ollama_inference_results.json}"
+LIMIT="${LIMIT:-0}"
+PYTHON="${PYTHON:-python3}"
+OLLAMA_BIN="${OLLAMA_BIN:-/Data3/it_FA0571/.local/bin/ollama}"
+export OLLAMA_MODELS="${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
+export OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-1}"
+export OLLAMA_MAX_LOADED_MODELS="${OLLAMA_MAX_LOADED_MODELS:-1}"
+export OLLAMA_KEEP_ALIVE="${OLLAMA_KEEP_ALIVE:-5m}"
+export PYTHONUNBUFFERED=1
+
+mkdir -p "$RUN_DIR" "$OLLAMA_MODELS"
+
+if [[ -n "${MIG_UUID:-}" ]]; then
+  export CUDA_VISIBLE_DEVICES="$MIG_UUID"
+fi
+
+if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
+  echo "ERROR: CUDA_VISIBLE_DEVICES is empty."
+  echo "PBS did not expose an allocated GPU/MIG. Submit with MIG_UUID=<uuid>."
+  nvidia-smi -L || true
+  exit 2
+fi
+
+if [[ "$CUDA_VISIBLE_DEVICES" == *,* ]]; then
+  echo "ERROR: Refusing multiple visible GPUs: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+  exit 2
+fi
+
+JOB_NUM="${PBS_JOBID%%.*}"
+if [[ "$JOB_NUM" =~ ^[0-9]+$ ]]; then
+  OLLAMA_PORT="${OLLAMA_PORT:-$((11435 + JOB_NUM % 1000))}"
+else
+  OLLAMA_PORT="${OLLAMA_PORT:-11435}"
+fi
+export OLLAMA_HOST="127.0.0.1:${OLLAMA_PORT}"
+
+cleanup() {
+  if [[ -n "${OLLAMA_PID:-}" ]]; then
+    kill "$OLLAMA_PID" 2>/dev/null || true
+    wait "$OLLAMA_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+echo "===== PBS OLLAMA MATRIX ENV ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "PBS_QUEUE=${PBS_QUEUE:-}"
+echo "HOSTNAME=$(hostname)"
+echo "MODEL_KEY=$MODEL_KEY"
+echo "MODEL_TAG=$MODEL_TAG"
+echo "ORIGIN=$ORIGIN"
+echo "PERSONA=$PERSONA"
+echo "PYTHON=$PYTHON"
+echo "OLLAMA_BIN=$OLLAMA_BIN"
+echo "OLLAMA_HOST=$OLLAMA_HOST"
+echo "OLLAMA_MODELS=$OLLAMA_MODELS"
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+echo "RUN_DIR=$RUN_DIR"
+echo "OUTPUT_FILE=$OUTPUT_FILE"
+echo "LIMIT=$LIMIT"
+echo
+nvidia-smi -L || true
+echo
+
+"$OLLAMA_BIN" serve > "$RUN_DIR/${MODEL_KEY}_${PERSONA}.ollama.log" 2>&1 &
+OLLAMA_PID=$!
+
+for _ in $(seq 1 90); do
+  if "$OLLAMA_BIN" list >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+if ! "$OLLAMA_BIN" list >/dev/null 2>&1; then
+  echo "ERROR: Ollama did not become ready."
+  tail -80 "$RUN_DIR/${MODEL_KEY}_${PERSONA}.ollama.log" || true
+  exit 3
+fi
+
+if ! "$OLLAMA_BIN" show "$MODEL_TAG" >/dev/null 2>&1; then
+  echo "Model $MODEL_TAG is missing in OLLAMA_MODELS=$OLLAMA_MODELS; pulling inside PBS job."
+  "$OLLAMA_BIN" pull "$MODEL_TAG"
+fi
+
+"$PYTHON" scripts/run_ollama_matrix.py \
+  --model-key "$MODEL_KEY" \
+  --tag "$MODEL_TAG" \
+  --origin "$ORIGIN" \
+  --persona "$PERSONA" \
+  --output-file "$OUTPUT_FILE" \
+  --limit "$LIMIT" \
+  2>&1 | tee "$RUN_DIR/${MODEL_KEY}_${PERSONA}.log"

@@ -1,0 +1,76 @@
+#!/bin/bash
+#PBS -N vlm_ollama_pull
+#PBS -q cpuq
+#PBS -l select=1:ncpus=4
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+MODEL_TAG="${MODEL_TAG:?Set MODEL_TAG with qsub -v MODEL_TAG=<tag>}"
+RUN_DIR="${RUN_DIR:-$PBS_O_WORKDIR/logs/ollama_pull/pbs_${PBS_JOBID}}"
+OLLAMA_BIN="${OLLAMA_BIN:-/Data3/it_FA0571/.local/bin/ollama}"
+export OLLAMA_MODELS="${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
+export OLLAMA_NUM_PARALLEL=1
+export OLLAMA_MAX_LOADED_MODELS=1
+
+mkdir -p "$RUN_DIR" "$OLLAMA_MODELS"
+
+if [[ -n "${CUDA_VISIBLE_DEVICES:-}" ]]; then
+  echo "ERROR: CPU pull job unexpectedly has CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+  exit 2
+fi
+
+JOB_NUM="${PBS_JOBID%%.*}"
+if [[ "$JOB_NUM" =~ ^[0-9]+$ ]]; then
+  OLLAMA_PORT="${OLLAMA_PORT:-$((12435 + JOB_NUM % 1000))}"
+else
+  OLLAMA_PORT="${OLLAMA_PORT:-12435}"
+fi
+export OLLAMA_HOST="127.0.0.1:${OLLAMA_PORT}"
+
+cleanup() {
+  if [[ -n "${OLLAMA_PID:-}" ]]; then
+    kill "$OLLAMA_PID" 2>/dev/null || true
+    wait "$OLLAMA_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+echo "===== PBS OLLAMA PULL ENV ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "PBS_QUEUE=${PBS_QUEUE:-}"
+echo "HOSTNAME=$(hostname)"
+echo "MODEL_TAG=$MODEL_TAG"
+echo "OLLAMA_BIN=$OLLAMA_BIN"
+echo "OLLAMA_HOST=$OLLAMA_HOST"
+echo "OLLAMA_MODELS=$OLLAMA_MODELS"
+echo
+
+"$OLLAMA_BIN" serve > "$RUN_DIR/${MODEL_TAG//[:\/]/_}.ollama.log" 2>&1 &
+OLLAMA_PID=$!
+
+for _ in $(seq 1 90); do
+  if "$OLLAMA_BIN" list >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+if ! "$OLLAMA_BIN" list >/dev/null 2>&1; then
+  echo "ERROR: Ollama did not become ready."
+  tail -80 "$RUN_DIR/${MODEL_TAG//[:\/]/_}.ollama.log" || true
+  exit 3
+fi
+
+if "$OLLAMA_BIN" show "$MODEL_TAG" >/dev/null 2>&1; then
+  echo "Model already present: $MODEL_TAG"
+else
+  echo "Pulling $MODEL_TAG"
+  "$OLLAMA_BIN" pull "$MODEL_TAG"
+fi
+
+echo "Pull/check complete for $MODEL_TAG"
