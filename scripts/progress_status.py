@@ -263,6 +263,74 @@ def print_inference_summary() -> None:
         )
 
 
+
+def latest_hf_matrix_run() -> tuple[Path, Path] | None:
+    run_marker = ROOT / "logs/hf_matrix/latest_run.txt"
+    results_marker = ROOT / "logs/hf_matrix/latest_results.txt"
+    if not run_marker.exists() or not results_marker.exists():
+        return None
+    run_dir = Path(run_marker.read_text().strip())
+    results_file = Path(results_marker.read_text().strip())
+    if not run_dir.exists():
+        return None
+    return run_dir, results_file
+
+
+def print_hf_matrix_summary(jobs: list[dict[str, str]]) -> None:
+    latest = latest_hf_matrix_run()
+    if not latest:
+        print("HF expanded matrix: no run submitted yet")
+        return
+
+    run_dir, results_file = latest
+    submitted_path = run_dir / "submitted_jobs.tsv"
+    submitted = []
+    if submitted_path.exists():
+        for line in submitted_path.read_text().splitlines():
+            parts = line.split()
+            if len(parts) >= 3:
+                submitted.append((parts[0], parts[1], parts[2]))
+
+    results = load_json(results_file, [])
+    if not isinstance(results, list):
+        results = []
+
+    stimuli, _models = expected_matrix()
+    per_job_total = len(stimuli) if stimuli else 48
+    expected_total = len(submitted) * per_job_total
+    done_pairs = {
+        (row.get("model"), row.get("stimulus"))
+        for row in results
+        if row.get("model")
+        and row.get("stimulus")
+        and not str(row.get("response", "")).startswith("ERROR:")
+    }
+    error_pairs = {
+        (row.get("model"), row.get("stimulus"))
+        for row in results
+        if row.get("model")
+        and row.get("stimulus")
+        and str(row.get("response", "")).startswith("ERROR:")
+    }
+
+    state_by_job = {job["id"]: job["state"] for job in jobs}
+    state_by_job.update({job["id"].split(".")[0]: job["state"] for job in jobs})
+    print(
+        f"HF expanded matrix: {len(done_pairs)}/{expected_total} responses "
+        f"({pct(len(done_pairs), expected_total)}) | errors={len(error_pairs)} | {short_path(run_dir)}"
+    )
+    for model, persona, job_id in submitted:
+        key_prefix = f"{model}_{persona}"
+        done = sum(1 for item in done_pairs if item[0] == key_prefix)
+        errors = sum(1 for item in error_pairs if item[0] == key_prefix)
+        state_key = state_by_job.get(job_id, state_by_job.get(job_id.split(".")[0], "done"))
+        state = STATE_NAMES.get(state_key, state_key)
+        print(
+            f"  {key_prefix:20} responses {done:>3}/{per_job_total:<3} {pct(done, per_job_total)} "
+            f"errors {errors:<3} {state}"
+        )
+
+
 def main() -> int:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     jobs = qstat_jobs()
@@ -288,6 +356,8 @@ def main() -> int:
     print_smoke_readiness()
     print()
     print_inference_summary()
+    print()
+    print_hf_matrix_summary(jobs)
     return 0
 
 

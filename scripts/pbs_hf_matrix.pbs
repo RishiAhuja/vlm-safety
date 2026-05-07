@@ -1,0 +1,86 @@
+#!/bin/bash
+#PBS -N vlm_hf_matrix
+#PBS -q workq
+#PBS -l select=1:ncpus=8:ngpus=1
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -euo pipefail
+
+cd "$PBS_O_WORKDIR"
+
+MODEL="${MODEL:?Set MODEL with qsub -v MODEL=<name>}"
+PERSONA="${PERSONA:?Set PERSONA with qsub -v PERSONA=<none|west|east>}"
+RUN_DIR="${RUN_DIR:-$PBS_O_WORKDIR/logs/hf_matrix/pbs_${PBS_JOBID}}"
+HF_HOME="${HF_HOME:-/Data3/it_FA0571/hf_cache}"
+OUTPUT_FILE="${OUTPUT_FILE:-$RUN_DIR/hf_inference_results.json}"
+LIMIT="${LIMIT:-0}"
+
+mkdir -p "$RUN_DIR"
+
+case "$MODEL" in
+  phi|internvl)
+    PYTHON="${PYTHON:-/Data3/it_FA0571/hf_vlm_phi_env/bin/python}"
+    ;;
+  molmo)
+    PYTHON="${PYTHON:-/Data3/it_FA0571/hf_vlm_molmo_env/bin/python}"
+    ;;
+  cogvlm2)
+    PYTHON="${PYTHON:-/Data3/it_FA0571/hf_vlm_cog_env/bin/python}"
+    ;;
+  deepseek)
+    PYTHON="${PYTHON:-/Data3/it_FA0571/hf_vlm_deepseek_env/bin/python}"
+    ;;
+  *)
+    PYTHON="${PYTHON:-/Data3/it_FA0571/hf_vlm_env/bin/python}"
+    ;;
+esac
+
+export PYTHONNOUSERSITE=1
+export HF_HOME
+export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
+export TRANSFORMERS_CACHE="$HF_HOME/transformers"
+export TOKENIZERS_PARALLELISM=false
+export PYTHONUNBUFFERED=1
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+export HF_MATRIX_RESULTS="$OUTPUT_FILE"
+
+if [[ -n "${MIG_UUID:-}" ]]; then
+  export CUDA_VISIBLE_DEVICES="$MIG_UUID"
+fi
+
+if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
+  echo "ERROR: CUDA_VISIBLE_DEVICES is empty."
+  echo "PBS did not expose an allocated GPU/MIG. Submit with MIG_UUID=<uuid>."
+  nvidia-smi -L || true
+  exit 2
+fi
+
+if [[ "$CUDA_VISIBLE_DEVICES" == *,* ]]; then
+  echo "ERROR: Refusing multiple visible GPUs: CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+  exit 2
+fi
+
+echo "===== PBS HF MATRIX ENV ====="
+date
+echo "PBS_JOBID=${PBS_JOBID:-}"
+echo "PBS_QUEUE=${PBS_QUEUE:-}"
+echo "HOSTNAME=$(hostname)"
+echo "MODEL=$MODEL"
+echo "PERSONA=$PERSONA"
+echo "PYTHON=$PYTHON"
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+echo "RUN_DIR=$RUN_DIR"
+echo "OUTPUT_FILE=$OUTPUT_FILE"
+echo "LIMIT=$LIMIT"
+echo
+nvidia-smi -L || true
+echo
+
+"$PYTHON" scripts/run_hf_matrix.py \
+  --model "$MODEL" \
+  --persona "$PERSONA" \
+  --output-file "$OUTPUT_FILE" \
+  --cache-dir "$HF_HOME" \
+  --limit "$LIMIT" \
+  2>&1 | tee "$RUN_DIR/${MODEL}_${PERSONA}.log"
