@@ -146,7 +146,12 @@ def run_molmo(model_id: str, image_path: Path, cache_dir: str) -> str:
     ).to("cuda:0").eval()
     image = load_image(image_path)
     inputs = processor.process(images=[image], text=PROMPT)
-    inputs = {k: v.to("cuda:0").unsqueeze(0) for k, v in inputs.items()}
+    inputs = {
+        k: v.to("cuda:0", dtype=torch.bfloat16).unsqueeze(0)
+        if torch.is_floating_point(v)
+        else v.to("cuda:0").unsqueeze(0)
+        for k, v in inputs.items()
+    }
     log("PHASE molmo generating")
     with torch.inference_mode():
         output = model.generate_from_batch(
@@ -352,8 +357,12 @@ def run_deepseek(model_id: str, image_path: Path, cache_dir: str) -> str:
     log("PHASE deepseek generating")
     with torch.inference_mode():
         inputs_embeds = model.prepare_inputs_embeds(**prepare_inputs)
-        outputs = model.language_model.generate(
+        outputs = model.generate(
             inputs_embeds=inputs_embeds,
+            input_ids=prepare_inputs.input_ids,
+            images=prepare_inputs.images,
+            images_seq_mask=prepare_inputs.images_seq_mask,
+            images_spatial_crop=prepare_inputs.images_spatial_crop,
             attention_mask=prepare_inputs.attention_mask,
             pad_token_id=tokenizer.eos_token_id,
             bos_token_id=tokenizer.bos_token_id,
