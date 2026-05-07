@@ -126,7 +126,6 @@ def run_molmo(model_id: str, image_path: Path, cache_dir: str) -> str:
         model_id,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
-        device_map="auto",
         cache_dir=cache_dir,
     )
     log("PHASE molmo loading_model")
@@ -134,12 +133,11 @@ def run_molmo(model_id: str, image_path: Path, cache_dir: str) -> str:
         model_id,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
-        device_map="auto",
         cache_dir=cache_dir,
-    ).eval()
+    ).to("cuda:0").eval()
     image = load_image(image_path)
     inputs = processor.process(images=[image], text=PROMPT)
-    inputs = {k: v.to(model.device).unsqueeze(0) for k, v in inputs.items()}
+    inputs = {k: v.to("cuda:0").unsqueeze(0) for k, v in inputs.items()}
     log("PHASE molmo generating")
     with torch.inference_mode():
         output = model.generate_from_batch(
@@ -270,6 +268,7 @@ def run_cogvlm2(model_id: str, image_path: Path, cache_dir: str) -> str:
             max_new_tokens=96,
             pad_token_id=128002,
             do_sample=False,
+            use_cache=False,
         )
     output = output[:, inputs["input_ids"].shape[1] :]
     return tokenizer.decode(output[0]).split("<|end_of_text|>")[0]
@@ -277,7 +276,7 @@ def run_cogvlm2(model_id: str, image_path: Path, cache_dir: str) -> str:
 
 def ensure_deepseek_package() -> None:
     try:
-        import deepseek_vl  # noqa: F401
+        import deepseek_vl2  # noqa: F401
         return
     except Exception:
         pass
@@ -297,8 +296,8 @@ def ensure_deepseek_package() -> None:
 
 def run_deepseek(model_id: str, image_path: Path, cache_dir: str) -> str:
     ensure_deepseek_package()
-    from deepseek_vl.models import DeepseekVLV2ForCausalLM, DeepseekVLV2Processor
-    from deepseek_vl.utils.io import load_pil_images
+    from deepseek_vl2.models import DeepseekVLV2ForCausalLM, DeepseekVLV2Processor
+    from deepseek_vl2.utils.io import load_pil_images
 
     log("PHASE deepseek loading_processor")
     processor: DeepseekVLV2Processor = DeepseekVLV2Processor.from_pretrained(
