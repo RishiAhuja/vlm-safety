@@ -30,9 +30,12 @@ if [[ -n "${MIG_UUID:-}" ]]; then
   QSUB_VARS="$QSUB_VARS,MIG_UUID=$MIG_UUID"
 fi
 
-prev_job=""
+prev_job="${AFTER_JOB:-}"
 echo "Submitting PBS smoke jobs sequentially to workq."
 echo "Run dir: $RUN_DIR"
+if [[ -n "$prev_job" ]]; then
+  echo "Initial dependency: afterany:$prev_job"
+fi
 
 for model in "${MODELS[@]}"; do
   vars="$QSUB_VARS,MODEL=$model"
