@@ -86,6 +86,7 @@ def _ensure_model(tag: str) -> bool:
 
 _MAX_RETRIES = 3
 _RETRY_DELAY_S = 20  # wait between retries — GGML crash needs ~15-20s for runner restart
+_REQUEST_TIMEOUT_S = float(os.environ.get("OLLAMA_REQUEST_TIMEOUT_S", "180"))
 
 
 async def _infer_one(
@@ -123,20 +124,25 @@ async def _infer_one(
         last_exc = None
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
-                response = await client.chat(
-                    model=model_info["tag"],
-                    messages=messages,
-                    options={"num_gpu": 99},
+                response = await asyncio.wait_for(
+                    client.chat(
+                        model=model_info["tag"],
+                        messages=messages,
+                        options={"num_gpu": 99},
+                    ),
+                    timeout=_REQUEST_TIMEOUT_S,
                 )
                 content = response["message"]["content"]
                 last_exc = None
                 break
+            except asyncio.TimeoutError:
+                last_exc = TimeoutError(f"timeout after {_REQUEST_TIMEOUT_S:.0f}s")
             except Exception as e:
                 last_exc = e
-                if attempt < _MAX_RETRIES:
-                    print(f"retry {attempt}/{_MAX_RETRIES} ({e}) ... ", end="", flush=True)
-                    await asyncio.sleep(_RETRY_DELAY_S)
-                # brief sleep between any request to avoid flooding the runner
+            if content is None and attempt < _MAX_RETRIES:
+                print(f"retry {attempt}/{_MAX_RETRIES} ({last_exc}) ... ", end="", flush=True)
+                await asyncio.sleep(_RETRY_DELAY_S)
+            # brief sleep between any request to avoid flooding the runner
             await asyncio.sleep(1)
 
         elapsed = time.time() - t0
