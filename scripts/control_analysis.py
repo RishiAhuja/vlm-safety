@@ -21,6 +21,7 @@ TEXT_FILE = Path(os.environ.get("TEXT_ONLY_FILE", ROOT / "results/controls/ollam
 OLLAMA_OCR_FILE = Path(os.environ.get("OLLAMA_OCR_FILE", ROOT / "results/controls/ollama_ocr_results.json"))
 HF_OCR_FILE = Path(os.environ.get("HF_OCR_FILE", ROOT / "results/controls/hf_ocr_results.json"))
 ROBUST_FILE = Path(os.environ.get("ROBUST_FILE", ROOT / "results/controls/ollama_ocr_then_answer_results.json"))
+ROBUST_SCORED_FILE = Path(os.environ.get("ROBUST_SCORED_FILE", ROOT / "results/controls/ollama_ocr_then_answer_scored_gpt55.json"))
 
 SENSITIVE = {"West-sensitive", "East-sensitive"}
 REFUSAL_RE = re.compile(
@@ -173,6 +174,8 @@ def joined_rows(image: list[dict[str, Any]], text: list[dict[str, Any]], ocr: li
                 "ocr_good_0_8": sim(oc.get("response", ""), img.get("concept", "")) >= 0.8 if oc else "missing",
                 "robust_present": bool(rb),
                 "robust_error": is_error(rb) if rb else "missing",
+                "robust_score": rb.get("score", "missing") if rb else "missing",
+                "robust_failure_mode": rb.get("failure_mode", "missing") if rb else "missing",
             }
         )
     return rows
@@ -184,7 +187,7 @@ def main() -> int:
     text = load(TEXT_FILE)
     ollama_ocr = load(OLLAMA_OCR_FILE)
     hf_ocr = load(HF_OCR_FILE)
-    robust = load(ROBUST_FILE)
+    robust = load(ROBUST_SCORED_FILE) if ROBUST_SCORED_FILE.exists() else load(ROBUST_FILE)
 
     image_summary = summarize_image(image)
     text_summary = summarize_text(text)
@@ -195,7 +198,9 @@ def main() -> int:
     write_csv(OUT_DIR / "image_failure_by_model.csv", image_summary)
     write_csv(OUT_DIR / "text_only_refusal_by_model.csv", text_summary)
     write_csv(OUT_DIR / "ollama_ocr_quality_by_model.csv", ollama_ocr_summary)
+    robust_summary = summarize_image(robust)
     write_csv(OUT_DIR / "hf_ocr_quality_by_model.csv", hf_ocr_summary)
+    write_csv(OUT_DIR / "ocr_then_answer_failure_by_model.csv", robust_summary)
     write_csv(OUT_DIR / "control_joined_ollama_sensitive.csv", joined)
 
     read_conditioned = [r for r in joined if r["ocr_good_0_8"] is True]
@@ -214,7 +219,7 @@ def main() -> int:
         ("Ollama text-only", TEXT_FILE, text),
         ("Ollama OCR", OLLAMA_OCR_FILE, ollama_ocr),
         ("HF OCR", HF_OCR_FILE, hf_ocr),
-        ("Ollama OCR-then-answer", ROBUST_FILE, robust),
+        ("Ollama OCR-then-answer", ROBUST_SCORED_FILE if ROBUST_SCORED_FILE.exists() else ROBUST_FILE, robust),
     ]:
         report.append(f"- {label}: {len(rows)} rows ({path})")
     report.append("")
@@ -234,6 +239,7 @@ def main() -> int:
         "text_only_refusal_by_model.csv",
         "ollama_ocr_quality_by_model.csv",
         "hf_ocr_quality_by_model.csv",
+        "ocr_then_answer_failure_by_model.csv",
         "control_joined_ollama_sensitive.csv",
     ]:
         report.append(f"- `{name}`")
