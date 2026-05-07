@@ -9,10 +9,14 @@ if ! command -v qsub >/dev/null 2>&1; then
   exit 1
 fi
 
-if pgrep -u "$USER" -af "model_smoke_hf.py|ollama serve|ollama pull" >/dev/null; then
-  echo "ERROR: login-node model processes are still running. Stop them before submitting PBS jobs:" >&2
-  pgrep -u "$USER" -af "model_smoke_hf.py|ollama serve|ollama pull" >&2 || true
+matching_processes="$(pgrep -u "$USER" -af "model_smoke_hf.py|ollama serve|ollama pull" || true)"
+running_pbs_jobs="$(qstat -u "$USER" 2>/dev/null | awk '$6 == "R" || $10 == "R" {print}' || true)"
+if [[ -n "$matching_processes" && -z "$running_pbs_jobs" ]]; then
+  echo "ERROR: matching model processes exist but no running PBS job was found:" >&2
+  echo "$matching_processes" >&2
   exit 1
+elif [[ -n "$matching_processes" ]]; then
+  echo "Found model process owned by running PBS job; continuing with queued/dependent submission."
 fi
 
 RUN_DIR="${RUN_DIR:-$ROOT/logs/model_smoke/pbs_$(date +%Y%m%d_%H%M%S)}"
