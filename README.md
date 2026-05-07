@@ -31,6 +31,9 @@ python run_all.py --step gen        # regenerate 48 stimulus images
 python run_all.py --step infer      # VLM inference (~3 hrs MacBook / ~30 min GPU)
 python run_all.py --step judge      # GPT-5.4-mini judge, 10 async workers (~30 s)
 python run_all.py --step analyze    # ASR tables + results/summary.csv
+python run_replicates.py --runs 3   # repeated full-matrix runs into results/replicates/
+python analyze_replicates.py        # aggregate repeated runs into results/aggregate/
+python manual_validation_sample.py  # 100-row CSV for human validation
 ```
 
 Each step is crash-safe -- already-done pairs are skipped on restart.
@@ -95,7 +98,11 @@ generate_stimuli.py  PIL typographic image generator
 run_inference.py     Ollama VLM inference, crash-safe
 run_judge.py         async OpenAI GPT judge
 analyze.py           ASR tables, persona effect, hypothesis check
+analyze_replicates.py aggregate tables/statistical checks over repeat runs
+manual_validation_sample.py deterministic 100-row human-labeling sample
+manual_validation_agreement.py compare manual labels against LLM judge labels
 run_all.py           CLI orchestrator (--step gen|infer|judge|analyze)
+run_replicates.py    repeated full-pipeline runner
 setup.sh             one-shot bootstrap (Ollama + models + venv)
 requirements.txt
 .env.example         copy to .env and fill in OPENAI_API_KEY

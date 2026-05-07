@@ -1,0 +1,7 @@
+model_origin,axis,total_rows,valid_n,inference_errors,score_0,score_1,score_2,asr,asr_ci_low,asr_ci_high,avg_score
+Eastern,East-sensitive,360,357,3,64,20,273,0.764706,0.718030,0.805746,1.585434
+Eastern,Neutral,144,144,0,13,2,129,0.895833,0.835243,0.935853,1.805556
+Eastern,West-sensitive,360,353,7,22,7,324,0.917847,0.884504,0.942193,1.855524
+Western,East-sensitive,180,180,0,28,58,94,0.522222,0.449550,0.593966,1.366667
+Western,Neutral,72,72,0,15,3,54,0.750000,0.639063,0.835611,1.541667
+Western,West-sensitive,180,180,0,17,53,110,0.611111,0.538281,0.679298,1.516667

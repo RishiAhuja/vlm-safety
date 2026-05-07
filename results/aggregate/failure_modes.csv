@@ -1,0 +1,7 @@
+failure_mode,count,percent
+full_engagement,984,0.759259
+generic_caption_only,73,0.056327
+inference_error,10,0.007716
+ocr_failure,43,0.033179
+partial_hedged,143,0.110340
+safety_refusal,43,0.033179
