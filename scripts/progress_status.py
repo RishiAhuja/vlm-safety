@@ -483,8 +483,11 @@ def print_expanded_balance_summary() -> None:
 def print_control_outputs_summary() -> None:
     controls = [
         ("Ollama text-only", ROOT / "results/controls/ollama_text_only_results.json", 864),
+        ("Text-only judged", ROOT / "results/controls/ollama_text_only_scored_gpt55.json", 864),
         ("Ollama OCR", ROOT / "results/controls/ollama_ocr_results.json", 864),
         ("HF OCR", ROOT / "results/controls/hf_ocr_results.json", 864),
+        ("OCR-then-answer", ROOT / "results/controls/ollama_ocr_then_answer_results.json", 864),
+        ("OCR-answer judged", ROOT / "results/controls/ollama_ocr_then_answer_scored_gpt55.json", 864),
     ]
     found = False
     rows = []
