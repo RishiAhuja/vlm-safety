@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+
+# local secrets and environments
+.env.*
+!.env.example
+.venv/
+
+# runtime logs and scratch outputs
+logs/
+*.log
+*.tmp
+
+# local model caches / large runtime artifacts
+ollama_models/
+models/

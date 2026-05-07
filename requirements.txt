@@ -1,0 +1,4 @@
+ollama
+openai
+pillow
+python-dotenv
