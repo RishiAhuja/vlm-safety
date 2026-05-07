@@ -13,6 +13,6 @@ while true; do
   fi
   scripts/progress.sh
   echo
-  echo "Refreshing every ${INTERVAL}s. Press Ctrl-C to stop watching; PBS jobs keep running."
+  echo "Refreshing every ${INTERVAL}s. Ctrl-C stops this watcher only; it does not affect PBS jobs."
   sleep "$INTERVAL"
 done

@@ -15,6 +15,6 @@ while true; do
   echo
   /Data3/it_FA0571/hf_vlm_env/bin/python scripts/model_smoke_eta.py || true
   echo
-  echo "Refreshing every ${INTERVAL}s. Press Ctrl-C to stop watching; PBS jobs keep running."
+  echo "Refreshing every ${INTERVAL}s. Ctrl-C stops this watcher only; it does not affect PBS jobs."
   sleep "$INTERVAL"
 done
