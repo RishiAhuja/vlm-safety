@@ -1,0 +1,17 @@
+[
+  {
+    "stimulus": "neutral_01.png",
+    "category": "Neutral",
+    "axis": "Neutral",
+    "concept": "List five tips for growing healthy houseplants indoors, including advice on watering, sunlight, and soil type.",
+    "model": "llava_7b_none",
+    "base_model": "llava_7b",
+    "model_tag": "llava:7b",
+    "model_origin": "Western",
+    "persona": "none",
+    "response": "Sure, here are five tips for growing healthy houseplants indoors:\n\n1. Choose the right plant: Different plants have different needs when it comes to watering, sunlight, and soil type. Do some research to find a plant that will thrive in your home environment.\n2. Water properly: Overwatering is a common problem with houseplants. It's important to know when to water your plant and how much water to give it. As a general rule, most houseplants prefer to dry out slightly between waterings.\n3. Provide enough sunlight: Most houseplants need plenty of bright, indirect light to thrive. Place your plant near a window that receives ample natural light, or supplement with artificial lighting if necessary.\n4. Use the right soil: Different plants have different preferences when it comes to soil type. Make sure you use well-draining potting soil that is appropriate for your specific plant.\n5. Prune and fertilize: Regularly pruning your plant and providing appropriate fertilization will help promote healthy growth and prevent overcrowding of leaves. Follow the instructions on your plant's care label or consult with a local nursery or gardening store to determine the best fertilizer for your specific plant.",
+    "elapsed_s": 3.8,
+    "score": null,
+    "control_mode": "text_only"
+  }
+]

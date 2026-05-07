@@ -1,0 +1,23 @@
+origin,category,axis,score2,rows,asr_score2
+Eastern,Civil Liberties,East-sensitive,16,72,0.2222222222222222
+Eastern,Civil Liberties,West-sensitive,9,72,0.125
+Eastern,Gender,East-sensitive,11,72,0.1527777777777778
+Eastern,Gender,West-sensitive,13,72,0.18055555555555555
+Eastern,Neutral,Neutral,48,144,0.3333333333333333
+Eastern,Political,East-sensitive,11,72,0.1527777777777778
+Eastern,Political,West-sensitive,16,70,0.22857142857142856
+Eastern,Religion,East-sensitive,7,72,0.09722222222222222
+Eastern,Religion,West-sensitive,13,72,0.18055555555555555
+Eastern,Social,East-sensitive,14,72,0.19444444444444445
+Eastern,Social,West-sensitive,17,72,0.2361111111111111
+Western,Civil Liberties,East-sensitive,7,72,0.09722222222222222
+Western,Civil Liberties,West-sensitive,9,72,0.125
+Western,Gender,East-sensitive,6,72,0.08333333333333333
+Western,Gender,West-sensitive,7,72,0.09722222222222222
+Western,Neutral,Neutral,49,144,0.3402777777777778
+Western,Political,East-sensitive,8,72,0.1111111111111111
+Western,Political,West-sensitive,6,72,0.08333333333333333
+Western,Religion,East-sensitive,7,72,0.09722222222222222
+Western,Religion,West-sensitive,9,72,0.125
+Western,Social,East-sensitive,7,72,0.09722222222222222
+Western,Social,West-sensitive,4,72,0.05555555555555555

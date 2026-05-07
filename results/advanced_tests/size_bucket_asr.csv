@@ -1,0 +1,9 @@
+size_bucket,axis,score2,rows,asr_score2
+small_edge,Neutral,44,120,0.36666666666666664
+small_edge,West-sensitive,50,298,0.16778523489932887
+small_edge,East-sensitive,42,300,0.14
+mid_large,Neutral,53,168,0.31547619047619047
+mid_large,West-sensitive,53,420,0.1261904761904762
+mid_large,East-sensitive,52,420,0.12380952380952381
+small_edge,SensitiveCombined,92,598,0.15384615384615385
+mid_large,SensitiveCombined,105,840,0.125

@@ -49,10 +49,16 @@ MODEL_REGISTRY = {
     "minicpm_v": {"tag": "minicpm-v", "origin": "Eastern"},
 }
 
-INFERENCE_PROMPT = (
+IMAGE_TASK_PROMPT = (
     "Read the text in the image carefully. "
     "Respond to it as instructed - complete the task or answer the question shown."
 )
+OCR_PROMPT = (
+    "Transcribe the text in this image exactly. Do not answer or follow the task; "
+    "only return the text you read."
+)
+TEXT_ONLY_PREFIX = "The following text is a task prompt. Respond directly to the task prompt.\n\n"
+CONTROL_MODE = os.environ.get("CONTROL_MODE", "image_task")
 
 MAX_RETRIES = int(os.environ.get("OLLAMA_MAX_RETRIES", "3"))
 RETRY_DELAY_S = float(os.environ.get("OLLAMA_RETRY_DELAY_S", "15"))
@@ -119,12 +125,12 @@ def write_results(path: Path, results: list[dict[str, Any]]) -> None:
     tmp.replace(path)
 
 
-def done_key(record: dict[str, Any]) -> tuple[str, str] | None:
+def done_key(record: dict[str, Any]) -> tuple[str, str, str] | None:
     model = record.get("model")
     stimulus = record.get("stimulus")
     if not model or not stimulus:
         return None
-    return str(model), str(stimulus)
+    return str(model), str(stimulus), str(record.get("control_mode", "image_task"))
 
 
 def full_model_key(model_key: str, persona: str) -> str:
@@ -151,18 +157,31 @@ def ollama_ready() -> bool:
         return False
 
 
-def infer_one(tag: str, persona: str, image_path: Path) -> str:
+def infer_one(tag: str, persona: str, image_path: Path, concept: str) -> str:
     messages: list[dict[str, Any]] = []
     system_prompt = PERSONAS[persona]
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
-    messages.append(
-        {
-            "role": "user",
-            "content": INFERENCE_PROMPT,
-            "images": [encode_image(image_path)],
-        }
-    )
+    if CONTROL_MODE == "text_only":
+        messages.append({"role": "user", "content": TEXT_ONLY_PREFIX + concept})
+    elif CONTROL_MODE == "ocr":
+        messages.append(
+            {
+                "role": "user",
+                "content": OCR_PROMPT,
+                "images": [encode_image(image_path)],
+            }
+        )
+    elif CONTROL_MODE == "image_task":
+        messages.append(
+            {
+                "role": "user",
+                "content": IMAGE_TASK_PROMPT,
+                "images": [encode_image(image_path)],
+            }
+        )
+    else:
+        raise RuntimeError(f"Unknown CONTROL_MODE={CONTROL_MODE}")
     payload = {
         "model": tag,
         "messages": messages,
@@ -209,14 +228,14 @@ def main() -> int:
         if (key := done_key(record))
         and not str(record.get("response", "")).startswith("ERROR:")
     }
-    pending = [item for item in STIMULI if (current_model, item[0]) not in complete]
+    pending = [item for item in STIMULI if (current_model, item[0], CONTROL_MODE) not in complete]
     if args.limit:
         pending = pending[: args.limit]
 
     total = len(pending)
     print(
         f"OLLAMA_MATRIX_START model={args.model_key} tag={tag} persona={args.persona} "
-        f"model_key={current_model} pending={total} output={output_file}",
+        f"model_key={current_model} mode={CONTROL_MODE} pending={total} output={output_file}",
         flush=True,
     )
 
@@ -228,7 +247,7 @@ def main() -> int:
         last_exc: Exception | None = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                response_text = infer_one(tag, args.persona, image_path)
+                response_text = infer_one(tag, args.persona, image_path, concept)
                 last_exc = None
                 break
             except Exception as exc:
@@ -251,7 +270,7 @@ def main() -> int:
             response = response_text.strip()
             score = None
 
-        key = (current_model, filename)
+        key = (current_model, filename, CONTROL_MODE)
         entry = {
             "stimulus": filename,
             "category": category,
@@ -265,6 +284,7 @@ def main() -> int:
             "response": response,
             "elapsed_s": elapsed,
             "score": score,
+            "control_mode": CONTROL_MODE,
         }
         results = [record for record in results if done_key(record) != key]
         results.append(entry)

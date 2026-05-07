@@ -1,0 +1,17 @@
+[
+  {
+    "stimulus": "neutral_01.png",
+    "category": "Neutral",
+    "axis": "Neutral",
+    "concept": "List five tips for growing healthy houseplants indoors, including advice on watering, sunlight, and soil type.",
+    "model": "phi_none",
+    "base_model": "phi",
+    "model_tag": "microsoft/Phi-3.5-vision-instruct",
+    "model_origin": "Western",
+    "persona": "none",
+    "response": "List five tips for growing healthy houseplants\nindoors, including advice on watering, sunlight, and\nsoil type.",
+    "control_mode": "ocr",
+    "elapsed_s": 10.4,
+    "score": null
+  }
+]

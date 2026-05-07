@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N vlm_hf_matrix
 #PBS -q workq
-#PBS -l select=1:ncpus=8:ngpus=1
+#PBS -l select=1:ncpus=8:ngpus=1:mem=32gb
 #PBS -l walltime=04:00:00
 #PBS -j oe
 
@@ -15,6 +15,7 @@ RUN_DIR="${RUN_DIR:-$PBS_O_WORKDIR/logs/hf_matrix/pbs_${PBS_JOBID}}"
 HF_HOME="${HF_HOME:-/Data3/it_FA0571/hf_cache}"
 OUTPUT_FILE="${OUTPUT_FILE:-$RUN_DIR/hf_inference_results.json}"
 LIMIT="${LIMIT:-0}"
+CONTROL_MODE="${CONTROL_MODE:-image_task}"
 
 mkdir -p "$RUN_DIR"
 
@@ -42,16 +43,69 @@ export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
 export TRANSFORMERS_CACHE="$HF_HOME/transformers"
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
+export CONTROL_MODE
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export HF_MATRIX_RESULTS="$OUTPUT_FILE"
 
-if [[ -n "${MIG_UUID:-}" ]]; then
-  export CUDA_VISIBLE_DEVICES="$MIG_UUID"
+GPU_SELECTOR="${GPU_SELECTOR:-${MIG_UUID:-auto}}"
+if [[ "$GPU_SELECTOR" == "auto" ]]; then
+  GPU_SELECTOR="$(python3 - <<'INNER'
+import csv
+import subprocess
+
+try:
+    topo = subprocess.check_output(["nvidia-smi", "-L"], text=True)
+    query = subprocess.check_output(
+        [
+            "nvidia-smi",
+            "--query-gpu=index,uuid,memory.used,utilization.gpu",
+            "--format=csv,noheader,nounits",
+        ],
+        text=True,
+    )
+except Exception as exc:
+    raise SystemExit(f"GPU auto-select failed: {exc}")
+
+mig_parent_indexes = set()
+current = None
+for line in topo.splitlines():
+    if line.startswith("GPU "):
+        current = line.split(":", 1)[0].split()[1]
+    elif "MIG " in line and current is not None:
+        mig_parent_indexes.add(current)
+
+candidates = []
+for row in csv.reader(query.splitlines()):
+    if len(row) < 4:
+        continue
+    idx, uuid, mem_used, util = [item.strip() for item in row[:4]]
+    if idx in mig_parent_indexes:
+        continue
+    try:
+        mem = int(mem_used)
+    except ValueError:
+        mem = 10**9
+    try:
+        gpu_util = int(util)
+    except ValueError:
+        gpu_util = 0
+    candidates.append((mem, gpu_util, idx, uuid))
+
+if not candidates:
+    raise SystemExit("No non-MIG full GPU candidate found")
+
+candidates.sort()
+print(candidates[0][3])
+INNER
+)"
+fi
+
+if [[ -n "$GPU_SELECTOR" ]]; then
+  export CUDA_VISIBLE_DEVICES="$GPU_SELECTOR"
 fi
 
 if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
-  echo "ERROR: CUDA_VISIBLE_DEVICES is empty."
-  echo "PBS did not expose an allocated GPU/MIG. Submit with MIG_UUID=<uuid>."
+  echo "ERROR: CUDA_VISIBLE_DEVICES is empty after GPU selection."
   nvidia-smi -L || true
   exit 2
 fi
@@ -69,10 +123,12 @@ echo "HOSTNAME=$(hostname)"
 echo "MODEL=$MODEL"
 echo "PERSONA=$PERSONA"
 echo "PYTHON=$PYTHON"
+echo "GPU_SELECTOR=$GPU_SELECTOR"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 echo "RUN_DIR=$RUN_DIR"
 echo "OUTPUT_FILE=$OUTPUT_FILE"
 echo "LIMIT=$LIMIT"
+echo "CONTROL_MODE=$CONTROL_MODE"
 echo
 nvidia-smi -L || true
 echo

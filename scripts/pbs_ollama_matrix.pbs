@@ -16,6 +16,7 @@ PERSONA="${PERSONA:?Set PERSONA with qsub -v PERSONA=<none|west|east>}"
 RUN_DIR="${RUN_DIR:-$PBS_O_WORKDIR/logs/ollama_matrix/pbs_${PBS_JOBID}}"
 OUTPUT_FILE="${OUTPUT_FILE:-$RUN_DIR/ollama_inference_results.json}"
 LIMIT="${LIMIT:-0}"
+CONTROL_MODE="${CONTROL_MODE:-image_task}"
 PYTHON="${PYTHON:-python3}"
 OLLAMA_BIN="${OLLAMA_BIN:-/Data3/it_FA0571/.local/bin/ollama}"
 export OLLAMA_MODELS="${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
@@ -27,6 +28,7 @@ export OLLAMA_LLM_LIBRARY="${OLLAMA_LLM_LIBRARY:-cuda_v12}"
 OLLAMA_LIB_DIR="$(dirname "$OLLAMA_BIN")/../lib/ollama"
 export LD_LIBRARY_PATH="$OLLAMA_LIB_DIR:$OLLAMA_LIB_DIR/$OLLAMA_LLM_LIBRARY:${LD_LIBRARY_PATH:-}"
 export PYTHONUNBUFFERED=1
+export CONTROL_MODE
 
 mkdir -p "$RUN_DIR" "$OLLAMA_MODELS"
 
@@ -136,6 +138,7 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 echo "RUN_DIR=$RUN_DIR"
 echo "OUTPUT_FILE=$OUTPUT_FILE"
 echo "LIMIT=$LIMIT"
+echo "CONTROL_MODE=$CONTROL_MODE"
 echo
 nvidia-smi -L || true
 echo

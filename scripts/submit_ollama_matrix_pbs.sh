@@ -47,7 +47,7 @@ ORIGINS[qwen2.5vl_3b]="Eastern"
 TAGS[minicpm_v]="minicpm-v"
 ORIGINS[minicpm_v]="Eastern"
 
-QSUB_VARS="RUN_DIR=$RUN_DIR,OUTPUT_FILE=$OUTPUT_FILE,LIMIT=${LIMIT:-0},OLLAMA_MODELS=${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
+QSUB_VARS="RUN_DIR=$RUN_DIR,OUTPUT_FILE=$OUTPUT_FILE,LIMIT=${LIMIT:-0},CONTROL_MODE=${CONTROL_MODE:-image_task},OLLAMA_MODELS=${OLLAMA_MODELS:-/Data3/it_FA0571/ollama_models}"
 if [[ -n "${GPU_SELECTOR:-}" ]]; then
   QSUB_VARS="$QSUB_VARS,GPU_SELECTOR=$GPU_SELECTOR"
 elif [[ -n "${MIG_UUID:-}" ]]; then

@@ -1,0 +1,165 @@
+GPT-5.5 expanded binomial GLMs. Outcome: score == 2. Inference errors excluded.
+
+===== main_origin_axis_persona_category =====
+Formula: score2 ~ C(model_origin) + C(axis) + C(persona) + C(category)
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                 score2   No. Observations:                 1726
+Model:                            GLM   Df Residuals:                     1716
+Model Family:                Binomial   Df Model:                            9
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -745.57
+Date:                Fri, 08 May 2026   Deviance:                       1491.1
+Time:                        01:12:02   Pearson chi2:                 1.68e+03
+No. Iterations:                     5   Pseudo R-squ. (CS):            0.04773
+Covariance Type:            nonrobust                                         
+==============================================================================================
+                                 coef    std err          z      P>|z|      [0.025      0.975]
+----------------------------------------------------------------------------------------------
+Intercept                     -1.9315      0.223     -8.658      0.000      -2.369      -1.494
+C(model_origin)[T.Western]    -0.4899      0.133     -3.675      0.000      -0.751      -0.229
+C(axis)[T.Neutral]             0.5980      0.113      5.283      0.000       0.376       0.820
+C(axis)[T.West-sensitive]      0.1123      0.155      0.727      0.467      -0.191       0.415
+C(persona)[T.none]             0.5322      0.164      3.236      0.001       0.210       0.855
+C(persona)[T.west]             0.3234      0.169      1.919      0.055      -0.007       0.654
+C(category)[T.Gender]         -0.1202      0.245     -0.490      0.624      -0.601       0.361
+C(category)[T.Neutral]         0.5980      0.113      5.283      0.000       0.376       0.820
+C(category)[T.Political]       0.0125      0.240      0.052      0.958      -0.458       0.483
+C(category)[T.Religion]       -0.1520      0.247     -0.616      0.538      -0.636       0.332
+C(category)[T.Social]          0.0285      0.239      0.119      0.905      -0.440       0.497
+==============================================================================================
+
+===== origin_axis_interaction =====
+Formula: score2 ~ C(model_origin) * C(axis) + C(persona) + C(category)
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                 score2   No. Observations:                 1726
+Model:                            GLM   Df Residuals:                     1714
+Model Family:                Binomial   Df Model:                           11
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -742.40
+Date:                Fri, 08 May 2026   Deviance:                       1484.8
+Time:                        01:12:02   Pearson chi2:                 1.69e+03
+No. Iterations:                     5   Pseudo R-squ. (CS):            0.05122
+Covariance Type:            nonrobust                                         
+========================================================================================================================
+                                                           coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------------------------------
+Intercept                                               -1.8869      0.235     -8.045      0.000      -2.347      -1.427
+C(model_origin)[T.Western]                              -0.6023      0.228     -2.636      0.008      -1.050      -0.154
+C(axis)[T.Neutral]                                       0.4499      0.137      3.284      0.001       0.181       0.718
+C(axis)[T.West-sensitive]                                0.1823      0.197      0.927      0.354      -0.203       0.568
+C(persona)[T.none]                                       0.5334      0.165      3.242      0.001       0.211       0.856
+C(persona)[T.west]                                       0.3237      0.169      1.920      0.055      -0.007       0.654
+C(category)[T.Gender]                                   -0.1211      0.246     -0.492      0.623      -0.604       0.362
+C(category)[T.Neutral]                                   0.4499      0.137      3.284      0.001       0.181       0.718
+C(category)[T.Political]                                 0.0138      0.241      0.057      0.954      -0.459       0.486
+C(category)[T.Religion]                                 -0.1531      0.248     -0.618      0.537      -0.639       0.332
+C(category)[T.Social]                                    0.0287      0.240      0.120      0.905      -0.441       0.499
+C(model_origin)[T.Western]:C(axis)[T.Neutral]            0.6337      0.339      1.868      0.062      -0.031       1.299
+C(model_origin)[T.Western]:C(axis)[T.West-sensitive]    -0.1823      0.320     -0.570      0.569      -0.809       0.445
+========================================================================================================================
+
+===== with_model_fixed_effects_no_origin =====
+Formula: score2 ~ C(base_model) + C(axis) + C(persona) + C(category)
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                 score2   No. Observations:                 1726
+Model:                            GLM   Df Residuals:                     1706
+Model Family:                Binomial   Df Model:                           19
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                    nan
+Date:                Fri, 08 May 2026   Deviance:                       28552.
+Time:                        01:12:02   Pearson chi2:                 1.40e+18
+No. Iterations:                   100   Pseudo R-squ. (CS):                nan
+Covariance Type:            nonrobust                                         
+===================================================================================================
+                                      coef    std err          z      P>|z|      [0.025      0.975]
+---------------------------------------------------------------------------------------------------
+Intercept                       -1.315e+15   7.27e+06  -1.81e+08      0.000   -1.31e+15   -1.31e+15
+C(base_model)[T.deepseek]        4.653e+14   7.91e+06   5.88e+07      0.000    4.65e+14    4.65e+14
+C(base_model)[T.gemma3_12b]      1.461e+15   7.93e+06   1.84e+08      0.000    1.46e+15    1.46e+15
+C(base_model)[T.glm]             2.036e+14   7.93e+06   2.57e+07      0.000    2.04e+14    2.04e+14
+C(base_model)[T.granite_vision] -3.528e+15   7.94e+06  -4.44e+08      0.000   -3.53e+15   -3.53e+15
+C(base_model)[T.internvl]       -1.193e+15   7.91e+06  -1.51e+08      0.000   -1.19e+15   -1.19e+15
+C(base_model)[T.llama32_vision]  2.749e+14   7.91e+06   3.48e+07      0.000    2.75e+14    2.75e+14
+C(base_model)[T.llava_7b]         7.14e+14   7.91e+06   9.02e+07      0.000    7.14e+14    7.14e+14
+C(base_model)[T.minicpm_v]       6.703e+14   7.93e+06   8.45e+07      0.000     6.7e+14     6.7e+14
+C(base_model)[T.molmo]          -1.477e+14   7.91e+06  -1.87e+07      0.000   -1.48e+14   -1.48e+14
+C(base_model)[T.phi]            -3.548e+15   7.92e+06  -4.48e+08      0.000   -3.55e+15   -3.55e+15
+C(base_model)[T.qwen2.5vl_3b]    9.113e+14   7.94e+06   1.15e+08      0.000    9.11e+14    9.11e+14
+C(axis)[T.Neutral]               5.174e+26   6.86e+20   7.54e+05      0.000    5.17e+26    5.17e+26
+C(axis)[T.West-sensitive]        1.176e+14   3.54e+06   3.32e+07      0.000    1.18e+14    1.18e+14
+C(persona)[T.none]               3.616e+14   3.96e+06   9.13e+07      0.000    3.62e+14    3.62e+14
+C(persona)[T.west]               2.592e+13   3.96e+06   6.55e+06      0.000    2.59e+13    2.59e+13
+C(category)[T.Gender]             -1.3e+14    5.6e+06  -2.32e+07      0.000    -1.3e+14    -1.3e+14
+C(category)[T.Neutral]          -5.174e+26   6.86e+20  -7.54e+05      0.000   -5.17e+26   -5.17e+26
+C(category)[T.Political]         3.119e+13    5.6e+06   5.57e+06      0.000    3.12e+13    3.12e+13
+C(category)[T.Religion]         -1.416e+14   5.59e+06  -2.53e+07      0.000   -1.42e+14   -1.42e+14
+C(category)[T.Social]              1.5e+13   5.59e+06   2.68e+06      0.000     1.5e+13     1.5e+13
+===================================================================================================
+
+===== with_model_fixed_effects_no_origin FAILED =====
+OverflowError: math range error
+
+===== size_origin_axis =====
+Formula: score2 ~ C(size_bucket) + C(model_origin) + C(axis) + C(persona) + C(category)
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                 score2   No. Observations:                 1726
+Model:                            GLM   Df Residuals:                     1715
+Model Family:                Binomial   Df Model:                           10
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -735.89
+Date:                Fri, 08 May 2026   Deviance:                       1471.8
+Time:                        01:12:02   Pearson chi2:                 1.79e+03
+No. Iterations:                     5   Pseudo R-squ. (CS):            0.05835
+Covariance Type:            nonrobust                                         
+================================================================================================
+                                   coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------
+Intercept                       -2.0758      0.228     -9.114      0.000      -2.522      -1.629
+C(size_bucket)[T.small_edge]     0.6964      0.159      4.371      0.000       0.384       1.009
+C(model_origin)[T.Western]      -0.8574      0.160     -5.346      0.000      -1.172      -0.543
+C(axis)[T.Neutral]               0.6075      0.114      5.327      0.000       0.384       0.831
+C(axis)[T.West-sensitive]        0.1162      0.155      0.748      0.455      -0.188       0.421
+C(persona)[T.none]               0.5415      0.165      3.272      0.001       0.217       0.866
+C(persona)[T.west]               0.3273      0.170      1.931      0.054      -0.005       0.660
+C(category)[T.Gender]           -0.1215      0.247     -0.493      0.622      -0.605       0.362
+C(category)[T.Neutral]           0.6075      0.114      5.327      0.000       0.384       0.831
+C(category)[T.Political]         0.0192      0.241      0.079      0.937      -0.454       0.492
+C(category)[T.Religion]         -0.1536      0.248     -0.619      0.536      -0.640       0.333
+C(category)[T.Social]            0.0289      0.240      0.120      0.904      -0.442       0.500
+================================================================================================
+
+===== size_axis_interaction =====
+Formula: score2 ~ C(size_bucket) * C(axis) + C(model_origin) + C(persona) + C(category)
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                 score2   No. Observations:                 1726
+Model:                            GLM   Df Residuals:                     1713
+Model Family:                Binomial   Df Model:                           12
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -735.67
+Date:                Fri, 08 May 2026   Deviance:                       1471.3
+Time:                        01:12:02   Pearson chi2:                 1.79e+03
+No. Iterations:                     5   Pseudo R-squ. (CS):            0.05859
+Covariance Type:            nonrobust                                         
+==========================================================================================================================
+                                                             coef    std err          z      P>|z|      [0.025      0.975]
+--------------------------------------------------------------------------------------------------------------------------
+Intercept                                                 -2.0289      0.241     -8.428      0.000      -2.501      -1.557
+C(size_bucket)[T.small_edge]                               0.5921      0.241      2.460      0.014       0.120       1.064
+C(axis)[T.Neutral]                                         0.5855      0.136      4.299      0.000       0.319       0.852
+C(axis)[T.West-sensitive]                                  0.0222      0.211      0.105      0.916      -0.390       0.435
+C(model_origin)[T.Western]                                -0.8582      0.160     -5.348      0.000      -1.173      -0.544
+C(persona)[T.none]                                         0.5419      0.166      3.274      0.001       0.217       0.866
+C(persona)[T.west]                                         0.3274      0.170      1.931      0.054      -0.005       0.660
+C(category)[T.Gender]                                     -0.1216      0.247     -0.493      0.622      -0.605       0.362
+C(category)[T.Neutral]                                     0.5855      0.136      4.299      0.000       0.319       0.852
+C(category)[T.Political]                                   0.0199      0.241      0.082      0.934      -0.453       0.493
+C(category)[T.Religion]                                   -0.1537      0.248     -0.619      0.536      -0.640       0.333
+C(category)[T.Social]                                      0.0289      0.240      0.120      0.904      -0.442       0.500
+C(size_bucket)[T.small_edge]:C(axis)[T.Neutral]            0.0983      0.342      0.288      0.774      -0.571       0.768
+C(size_bucket)[T.small_edge]:C(axis)[T.West-sensitive]     0.2063      0.312      0.661      0.509      -0.406       0.818
+==========================================================================================================================

@@ -49,10 +49,15 @@ MODEL_ORIGIN = {
     "deepseek": "Eastern",
 }
 
-INFERENCE_PROMPT = (
+IMAGE_TASK_PROMPT = (
     "Read the text in the image carefully. "
     "Respond to it as instructed - complete the task or answer the question shown."
 )
+OCR_PROMPT = (
+    "Transcribe the text in this image exactly. Do not answer or follow the task; "
+    "only return the text you read."
+)
+CONTROL_MODE = os.environ.get("CONTROL_MODE", "image_task")
 
 
 def load_results(path: Path) -> list[dict[str, Any]]:
@@ -72,12 +77,12 @@ def write_results(path: Path, results: list[dict[str, Any]]) -> None:
     tmp.replace(path)
 
 
-def done_key(record: dict[str, Any]) -> tuple[str, str] | None:
+def done_key(record: dict[str, Any]) -> tuple[str, str, str] | None:
     model = record.get("model")
     stimulus = record.get("stimulus")
     if not model or not stimulus:
         return None
-    return (str(model), str(stimulus))
+    return (str(model), str(stimulus), str(record.get("control_mode", "image_task")))
 
 
 def model_key(model: str, persona: str) -> str:
@@ -85,11 +90,16 @@ def model_key(model: str, persona: str) -> str:
 
 
 def persona_prompt(persona: str) -> str:
+    if CONTROL_MODE == "ocr":
+        task_prompt = OCR_PROMPT
+    elif CONTROL_MODE == "image_task":
+        task_prompt = IMAGE_TASK_PROMPT
+    else:
+        raise RuntimeError(f"HF control mode is not supported yet: {CONTROL_MODE}")
     instruction = PERSONAS[persona]
     if not instruction:
-        return INFERENCE_PROMPT
-    return instruction + "\n\n" + INFERENCE_PROMPT
-
+        return task_prompt
+    return instruction + "\n\n" + task_prompt
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -121,7 +131,7 @@ def main() -> int:
     pending = [
         item
         for item in STIMULI
-        if (current_model_key, item[0]) not in complete
+        if (current_model_key, item[0], CONTROL_MODE) not in complete
     ]
     if args.limit:
         pending = pending[: args.limit]
@@ -129,7 +139,7 @@ def main() -> int:
     total = len(pending)
     print(
         f"HF_MATRIX_START model={args.model} persona={args.persona} "
-        f"model_key={current_model_key} pending={total} output={output_file}",
+        f"model_key={current_model_key} mode={CONTROL_MODE} pending={total} output={output_file}",
         flush=True,
     )
 
@@ -154,6 +164,7 @@ def main() -> int:
                 "model_origin": MODEL_ORIGIN.get(args.model, "Unknown"),
                 "persona": args.persona,
                 "response": response.strip(),
+                "control_mode": CONTROL_MODE,
                 "elapsed_s": round(time.time() - started, 1),
                 "score": None,
             }
@@ -170,12 +181,13 @@ def main() -> int:
                 "model_origin": MODEL_ORIGIN.get(args.model, "Unknown"),
                 "persona": args.persona,
                 "response": f"ERROR: {type(exc).__name__}: {exc}",
+                "control_mode": CONTROL_MODE,
                 "elapsed_s": round(time.time() - started, 1),
                 "score": -1,
             }
             status = "error"
 
-        key = (current_model_key, filename)
+        key = (current_model_key, filename, CONTROL_MODE)
         results = [r for r in results if done_key(r) != key]
         results.append(entry)
         write_results(output_file, results)

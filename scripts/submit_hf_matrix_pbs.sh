@@ -33,8 +33,10 @@ fi
 PERSONAS_CSV="${PERSONAS:-none,west,east}"
 IFS=',' read -r -a PERSONA_LIST <<< "$PERSONAS_CSV"
 
-QSUB_VARS="RUN_DIR=$RUN_DIR,OUTPUT_FILE=$OUTPUT_FILE,HF_HOME=/Data3/it_FA0571/hf_cache,LIMIT=${LIMIT:-0}"
-if [[ -n "${MIG_UUID:-}" ]]; then
+QSUB_VARS="RUN_DIR=$RUN_DIR,OUTPUT_FILE=$OUTPUT_FILE,HF_HOME=/Data3/it_FA0571/hf_cache,LIMIT=${LIMIT:-0},CONTROL_MODE=${CONTROL_MODE:-image_task}"
+if [[ -n "${GPU_SELECTOR:-}" ]]; then
+  QSUB_VARS="$QSUB_VARS,GPU_SELECTOR=$GPU_SELECTOR"
+elif [[ -n "${MIG_UUID:-}" ]]; then
   QSUB_VARS="$QSUB_VARS,MIG_UUID=$MIG_UUID"
 fi
 
@@ -56,6 +58,8 @@ for model in "${MODELS[@]}"; do
     prev_job="$job_id"
   done
 done
+
+echo "$prev_job" > "$RUN_DIR/last_job.txt"
 
 echo
 echo "Monitor compactly with:"
