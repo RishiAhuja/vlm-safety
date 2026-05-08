@@ -297,7 +297,6 @@ def print_hf_matrix_summary(jobs: list[dict[str, str]]) -> None:
 
     stimuli, _models = expected_matrix()
     per_job_total = len(stimuli) if stimuli else 48
-    expected_total = len(submitted) * per_job_total
     done_pairs = {
         (row.get("model"), row.get("stimulus"))
         for row in results
@@ -313,6 +312,7 @@ def print_hf_matrix_summary(jobs: list[dict[str, str]]) -> None:
         and str(row.get("response", "")).startswith("ERROR:")
     }
 
+    expected_total = len(submitted) * per_job_total
     state_by_job = {job["id"]: job["state"] for job in jobs}
     state_by_job.update({job["id"].split(".")[0]: job["state"] for job in jobs})
     print(
@@ -365,7 +365,6 @@ def print_ollama_matrix_summary(jobs: list[dict[str, str]]) -> None:
 
     stimuli, _models = expected_matrix()
     per_job_total = len(stimuli) if stimuli else 48
-    expected_total = len(submitted) * per_job_total
     done_pairs = {
         (row.get("model"), row.get("stimulus"))
         for row in results
@@ -380,6 +379,16 @@ def print_ollama_matrix_summary(jobs: list[dict[str, str]]) -> None:
         and row.get("stimulus")
         and str(row.get("response", "")).startswith("ERROR:")
     }
+
+    # A run directory may include a one-row smoke job followed by the full job
+    # for the same model/persona. Keep the latest submitted job per key so
+    # expected totals reflect unique result rows rather than submission history.
+    deduped: dict[tuple[str, str], tuple[str, str, str, str, str]] = {}
+    for item in submitted:
+        model_key, persona, _tag, _origin, _job_id = item
+        deduped[(model_key, persona)] = item
+    submitted = list(deduped.values())
+    expected_total = len(submitted) * per_job_total
 
     origins = {model_key: origin for model_key, _persona, _tag, origin, _job_id in submitted}
     west_models = sum(1 for origin in origins.values() if origin == "Western")
@@ -450,10 +459,15 @@ def print_expanded_balance_summary() -> None:
         run_dir, results_file = ollama_latest
         submitted_path = run_dir / "submitted_jobs.tsv"
         if submitted_path.exists():
+            seen_jobs = set()
             for line in submitted_path.read_text().splitlines():
                 parts = line.split()
                 if len(parts) >= 5:
-                    model_key, _persona, _tag, origin, _job_id = parts[:5]
+                    model_key, persona, _tag, origin, _job_id = parts[:5]
+                    job_key = (model_key, persona)
+                    if job_key in seen_jobs:
+                        continue
+                    seen_jobs.add(job_key)
                     base_origins[model_key] = origin
                     expected_jobs += 1
         results = load_json(results_file, [])

@@ -1,0 +1,6 @@
+errors,label,mode_full_engagement,mode_generic_caption_only,mode_ocr_failure,mode_partial_hedged,mode_safety_refusal,rows,score2,score2_rate,valid
+2,expanded_all,294,468,198,484,282,1728,294,0.17033603707995365,1726
+2,expanded_sensitive,197,390,174,397,280,1440,197,0.13699582753824757,1438
+2,expanded_ollama_sensitive,159,110,160,163,126,720,159,0.2214484679665738,718
+16,text_only_sensitive,329,,,162,213,720,329,0.46732954545454547,704
+17,ocr_then_answer_sensitive,171,204,187,95,46,720,171,0.24324324324324326,703
