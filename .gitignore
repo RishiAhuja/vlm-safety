@@ -17,3 +17,6 @@ logs/
 # local model caches / large runtime artifacts
 ollama_models/
 models/
+
+# structured result snapshots are generated copies of committed/live outputs
+results/structured/
